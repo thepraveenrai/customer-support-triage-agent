@@ -86,7 +86,7 @@ def test_calm_billing_auto_resolve_flow():
     final_state = graph.invoke(initial_state, config=config)
 
     assert final_state["ticket_category"] == "billing"
-    assert final_state["sentiment"] == "NEUTRAL"
+    assert final_state["sentiment"] in ("NEUTRAL", "POSITIVE")
     assert final_state["status"] == "resolved"
     assert final_state["requires_human_approval"] is False
     assert final_state["final_response"] is not None

@@ -285,13 +285,139 @@ def run_diagram_mode():
     console.print(ascii_art)
 
 
+def run_stats_mode(csv_path: str = None):
+    """Displays rich analytics dashboard for the 1,000-ticket dataset."""
+    from src.data_loader import get_dataset_analytics, DEFAULT_CSV_PATH
+
+    path = csv_path or DEFAULT_CSV_PATH
+    stats = get_dataset_analytics(path)
+
+    console.print("\n[bold cyan]📊 1,000 ENTERPRISE TICKET DATASET ANALYTICS[/bold cyan]")
+    console.print(f"[dim]Dataset Path: {path}[/dim]\n")
+
+    # Overview Table
+    overview_table = Table(title="Dataset Key Metrics", border_style="cyan")
+    overview_table.add_column("Metric", style="bold white")
+    overview_table.add_column("Value", style="bold green")
+
+    overview_table.add_row("Total Ingested Tickets", str(stats["total_tickets"]))
+    overview_table.add_row("Human Review Checkpoints Needed", f"{stats['human_review_required_count']} ({stats['human_review_pct']}%)")
+    overview_table.add_row("Customer Churn Risks Flagged", f"{stats['churn_risk_count']} ({stats['churn_risk_pct']}%)")
+    overview_table.add_row("Total Disputed Amount", f"${stats['total_disputed_amount_sum']:,.2f}")
+    overview_table.add_row("Average Dispute Amount", f"${stats['average_disputed_amount']:,.2f}")
+    console.print(overview_table)
+
+    # Breakdown Tables Grid
+    grid_table = Table.grid(padding=1)
+    grid_table.add_column()
+    grid_table.add_column()
+
+    cat_table = Table(title="Category Distribution", border_style="blue")
+    cat_table.add_column("Category", style="cyan")
+    cat_table.add_column("Count", justify="right")
+    for cat, count in stats["categories"].items():
+        cat_table.add_row(cat.capitalize(), str(count))
+
+    sent_table = Table(title="Sentiment Breakdown", border_style="magenta")
+    sent_table.add_column("Sentiment", style="magenta")
+    sent_table.add_column("Count", justify="right")
+    for sent, count in stats["sentiments"].items():
+        sent_table.add_row(sent, str(count))
+
+    tier_table = Table(title="Customer Tiers", border_style="green")
+    tier_table.add_column("Tier", style="green")
+    tier_table.add_column("Count", justify="right")
+    for tier, count in stats["tiers"].items():
+        tier_table.add_row(tier.upper(), str(count))
+
+    prio_table = Table(title="Priority Levels", border_style="yellow")
+    prio_table.add_column("Priority", style="yellow")
+    prio_table.add_column("Count", justify="right")
+    for prio, count in stats["priorities"].items():
+        prio_table.add_row(prio, str(count))
+
+    console.print("\n")
+    console.print(cat_table)
+    console.print(sent_table)
+    console.print(tier_table)
+    console.print(prio_table)
+
+
+def run_dataset_mode(csv_path: str = None, limit: int = 5, ticket_id: str = None):
+    """Executes tickets loaded from the 1,000 enterprise dataset."""
+    from src.data_loader import load_tickets_csv, get_ticket_by_id, DEFAULT_CSV_PATH
+
+    path = csv_path or DEFAULT_CSV_PATH
+
+    if ticket_id:
+        target = get_ticket_by_id(ticket_id, csv_path=path)
+        if not target:
+            console.print(f"[bold red]Ticket ID '{ticket_id}' not found in dataset: {path}[/bold red]")
+            return
+        tickets_to_run = [target]
+    else:
+        tickets_to_run = load_tickets_csv(csv_path=path, limit=limit)
+
+    console.print(f"\n[bold cyan]🚀 EXECUTING {len(tickets_to_run)} TICKETS FROM ENTERPRISE DATASET[/bold cyan]")
+    console.print(f"[dim]Source: {path}[/dim]\n")
+
+    summary_table = Table(
+        title="Execution Results Summary",
+        border_style="cyan",
+        header_style="bold cyan",
+    )
+    summary_table.add_column("Ticket ID", style="bold white")
+    summary_table.add_column("Customer", style="dim white")
+    summary_table.add_column("Category", style="blue")
+    summary_table.add_column("Sentiment", style="yellow")
+    summary_table.add_column("Priority", style="red")
+    summary_table.add_column("HITL?", justify="center")
+    summary_table.add_column("Status", style="green")
+
+    for i, t in enumerate(tickets_to_run, 1):
+        console.print(f"\n[bold yellow]─── Running Ticket {i}/{len(tickets_to_run)}: {t['id']} ───[/bold yellow]")
+        final_state = execute_ticket(t, interactive_hitl=False)
+
+        hitl_marker = "[bold red]YES[/bold red]" if final_state.get("requires_human_approval") else "[green]NO[/green]"
+        summary_table.add_row(
+            t["id"],
+            f"{t['customer_id']} ({t['customer_tier'].upper()})",
+            final_state.get("ticket_category", "N/A"),
+            final_state.get("sentiment", "N/A"),
+            final_state.get("priority", "N/A"),
+            hitl_marker,
+            final_state.get("status", "N/A").upper(),
+        )
+
+    console.print("\n")
+    console.print(summary_table)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Customer Support Triage Multi-Agent System CLI")
     parser.add_argument(
         "--mode",
-        choices=["batch", "interactive", "diagram"],
+        choices=["batch", "interactive", "diagram", "dataset", "stats"],
         default="batch",
-        help="Run mode: 'batch' (stress-test tickets), 'interactive' (live tickets), 'diagram' (view graph flow)",
+        help="Run mode: 'batch' (stress-test 6 tickets), 'dataset' (run from 1000 CSV), 'stats' (dataset analytics), 'interactive' (live tickets), 'diagram' (view graph flow)",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Number of tickets to execute when in 'dataset' mode (default: 5)",
+    )
+    parser.add_argument(
+        "--ticket",
+        type=str,
+        default=None,
+        help="Specific ticket ID to execute from dataset (e.g. 'TIK-1042')",
+    )
+    parser.add_argument(
+        "--csv",
+        type=str,
+        default=None,
+        help="Custom path to tickets CSV dataset",
     )
     args = parser.parse_args()
 
@@ -303,7 +429,12 @@ def main():
         run_interactive_mode()
     elif args.mode == "diagram":
         run_diagram_mode()
+    elif args.mode == "stats":
+        run_stats_mode(csv_path=args.csv)
+    elif args.mode == "dataset":
+        run_dataset_mode(csv_path=args.csv, limit=args.limit, ticket_id=args.ticket)
 
 
 if __name__ == "__main__":
     main()
+

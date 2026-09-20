@@ -15,6 +15,7 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 
 from src.config import settings
+from src.data_loader import get_dataset_analytics, get_ticket_by_id, load_tickets_csv
 from src.graph import create_support_graph, get_mermaid_diagram
 from src.state import PriorityLevel, SentimentLevel, TicketCategory, TriageState
 
@@ -83,6 +84,34 @@ class TicketResponse(BaseModel):
     actions_taken: List[str] = []
 
 
+class DatasetTicketResponse(BaseModel):
+    """Schema for a ticket in the 1,000 enterprise dataset."""
+    ticket_id: str
+    customer_id: str
+    customer_name: str
+    customer_email: str
+    customer_company: str
+    customer_tier: str
+    channel: str
+    subject: str
+    message: str
+    disputed_amount: Optional[float] = None
+    expected_category: str
+    expected_sentiment: str
+    expected_priority: str
+    churn_risk: bool
+    expected_human_approval: bool
+    timestamp: str
+
+
+class DatasetListResponse(BaseModel):
+    """Paginated list of dataset tickets."""
+    total_in_batch: int
+    offset: int
+    limit: int
+    tickets: List[DatasetTicketResponse]
+
+
 # ==============================================================================
 # API Endpoints
 # ==============================================================================
@@ -100,14 +129,138 @@ def root():
     }
 
 
+# ------------------------------------------------------------------------------
+# 1,000 Enterprise Dataset Endpoints
+# ------------------------------------------------------------------------------
+
+@app.get("/api/dataset/stats", tags=["Enterprise Dataset"])
+def get_dataset_stats():
+    """Returns comprehensive statistical distribution of the 1,000 enterprise tickets."""
+    try:
+        return get_dataset_analytics()
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to compute dataset analytics: {err}",
+        )
+
+
+@app.get("/api/dataset/tickets", response_model=DatasetListResponse, tags=["Enterprise Dataset"])
+def list_dataset_tickets(
+    limit: int = 50,
+    offset: int = 0,
+    category: Optional[str] = None,
+    sentiment: Optional[str] = None,
+    priority: Optional[str] = None,
+    tier: Optional[str] = None,
+    search: Optional[str] = None,
+):
+    """Queries and filters tickets from the 1,000 enterprise dataset."""
+    try:
+        tickets = load_tickets_csv(
+            limit=limit,
+            offset=offset,
+            category=category,
+            sentiment=sentiment,
+            priority=priority,
+            tier=tier,
+            search=search,
+        )
+        return DatasetListResponse(
+            total_in_batch=len(tickets),
+            offset=offset,
+            limit=limit,
+            tickets=[DatasetTicketResponse(**t) for t in tickets],
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to query dataset: {err}",
+        )
+
+
+@app.get("/api/dataset/tickets/{ticket_id}", response_model=DatasetTicketResponse, tags=["Enterprise Dataset"])
+def get_dataset_ticket(ticket_id: str):
+    """Retrieves a single ticket by its ID (e.g. 'TIK-1042') from the 1,000 dataset."""
+    ticket = get_ticket_by_id(ticket_id)
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ticket '{ticket_id}' not found in the enterprise dataset.",
+        )
+    return DatasetTicketResponse(**ticket)
+
+
+@app.post("/api/dataset/triage/{ticket_id}", response_model=TicketResponse, tags=["Enterprise Dataset"])
+def triage_dataset_ticket(ticket_id: str, thread_id: Optional[str] = None):
+    """Triages a specific ticket from the 1,000 enterprise dataset through the LangGraph multi-agent pipeline."""
+    ticket = get_ticket_by_id(ticket_id)
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ticket '{ticket_id}' not found in the enterprise dataset.",
+        )
+
+    assigned_thread_id = thread_id or f"th-{ticket_id.lower()}-{uuid.uuid4().hex[:6]}"
+
+    initial_state: TriageState = {
+        "messages": [HumanMessage(content=ticket["message"])],
+        "ticket_id": ticket["ticket_id"],
+        "customer_id": ticket["customer_id"],
+        "customer_email": ticket["customer_email"],
+        "customer_tier": ticket["customer_tier"],
+        "ticket_category": None,
+        "sentiment": None,
+        "priority": None,
+        "churn_risk": None,
+        "triage_reasoning": None,
+        "specialist_assigned": None,
+        "draft_response": None,
+        "actions_taken": [],
+        "requires_human_approval": False,
+        "approval_reason": None,
+        "human_decision": None,
+        "human_feedback": None,
+        "final_response": None,
+        "status": "open",
+    }
+
+    config = {"configurable": {"thread_id": assigned_thread_id}}
+
+    try:
+        support_graph.invoke(initial_state, config=config)
+        snapshot = support_graph.get_state(config)
+        values = snapshot.values
+
+        return TicketResponse(
+            thread_id=assigned_thread_id,
+            ticket_id=ticket["ticket_id"],
+            status=values.get("status", "open"),
+            category=values.get("ticket_category"),
+            sentiment=values.get("sentiment"),
+            priority=values.get("priority"),
+            churn_risk=values.get("churn_risk"),
+            specialist_assigned=values.get("specialist_assigned"),
+            requires_human_approval=values.get("requires_human_approval", False),
+            approval_reason=values.get("approval_reason"),
+            draft_response=values.get("draft_response"),
+            final_response=values.get("final_response"),
+            actions_taken=values.get("actions_taken", []),
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Graph execution failed for ticket '{ticket_id}': {err}",
+        )
+
+
+# ------------------------------------------------------------------------------
+# Core Graph Execution & Checkpoint Endpoints
+# ------------------------------------------------------------------------------
+
 @app.post("/api/tickets/triage", response_model=TicketResponse, tags=["Support Tickets"])
 def triage_ticket(payload: TicketSubmissionRequest):
-    """Submit a customer support ticket for automated triage.
-
-    Executes the Supervisor node and specialist agent. If high financial risk,
-    angry sentiment, or escalation is triggered, pauses at the human checkpoint
-    with status='pending_human_review'.
-    """
+    """Submit a custom customer support ticket for automated triage."""
     thread_id = payload.thread_id or f"th-{uuid.uuid4().hex[:8]}"
     ticket_id = f"TIK-{uuid.uuid4().hex[:6].upper()}"
 
@@ -136,7 +289,6 @@ def triage_ticket(payload: TicketSubmissionRequest):
     config = {"configurable": {"thread_id": thread_id}}
 
     try:
-        # Step graph execution
         support_graph.invoke(initial_state, config=config)
         snapshot = support_graph.get_state(config)
         values = snapshot.values

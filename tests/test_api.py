@@ -65,3 +65,47 @@ def test_api_hitl_ticket_pause_and_resume():
     resumed_data = resume_res.json()
     assert resumed_data["status"] == "resolved"
     assert resumed_data["final_response"] is not None
+
+
+def test_api_dataset_stats():
+    """Verify enterprise dataset stats endpoint aggregates 1,000 tickets."""
+    response = client.get("/api/dataset/stats")
+    assert response.status_code == 200
+    stats = response.json()
+    assert stats["total_tickets"] >= 1000
+    assert "categories" in stats
+    assert "technical" in stats["categories"]
+    assert "billing" in stats["categories"]
+    assert "escalation" in stats["categories"]
+    assert stats["human_review_required_count"] > 0
+    assert stats["total_disputed_amount_sum"] > 0
+
+
+def test_api_dataset_tickets_pagination_and_filtering():
+    """Verify enterprise dataset listing with pagination and category/tier filters."""
+    # Test pagination
+    response = client.get("/api/dataset/tickets?limit=10&offset=0")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["limit"] == 10
+    assert data["offset"] == 0
+    assert len(data["tickets"]) == 10
+
+    # Test filtering by category
+    resp_billing = client.get("/api/dataset/tickets?category=billing&limit=5")
+    assert resp_billing.status_code == 200
+    billing_data = resp_billing.json()
+    assert len(billing_data["tickets"]) == 5
+    for t in billing_data["tickets"]:
+        assert t["expected_category"] == "billing"
+
+
+def test_api_dataset_single_ticket():
+    """Verify single ticket retrieval by ID from enterprise dataset."""
+    response = client.get("/api/dataset/tickets/TIK-1001")
+    assert response.status_code == 200
+    ticket = response.json()
+    assert ticket["ticket_id"] == "TIK-1001"
+    assert "customer_id" in ticket
+    assert "message" in ticket
+

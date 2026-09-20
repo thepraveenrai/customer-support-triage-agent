@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project 2: Customer Support Triage Agent | LangGraph Multi-Agent Systems</title>
+    <meta name="description" content="Production-ready multi-agent customer support triage system using LangGraph, featuring the Supervisor Pattern, Sentiment Intelligence, OpenRouter LLM Gateway, and Human-in-the-Loop (HITL) Checkpoints." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-theme="midnight">
+    <!-- Accessibility Screen Reader Live Announcer -->
+    <div id="srAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- 1. Header Toolbar -->
+    <header class="pres-header" role="banner">
+      <div class="header-left">
+        <span class="badge-course">LANGGRAPH 2026 • PROJECT 2</span>
+        <div class="slide-tracker">
+          SLIDE <span id="currentSlideNum">1</span> OF <span id="totalSlidesNum">14</span>
+        </div>
+        <div class="header-title-display" id="headerSlideTitle">Course Overview & Hook</div>
+      </div>
+
+      <div class="header-controls" role="toolbar" aria-label="Presentation Controls">
+        <!-- Theme Switcher -->
+        <div class="theme-selector-wrapper">
+          <label for="themeSelect" class="sr-only">Select Presentation Theme</label>
+          <select id="themeSelect" class="theme-select" aria-label="Select Presentation Theme">
+            <option value="midnight">🌙 Midnight Cyan</option>
+            <option value="obsidian">🌲 Obsidian Emerald</option>
+            <option value="aurora">🌅 Sunset Aurora</option>
+            <option value="studio-light">☀️ Studio Light</option>
+          </select>
+        </div>
+
+        <!-- Speaker Notes Toggle -->
+        <button id="notesToggleBtn" class="tool-btn" aria-label="Toggle Speaker Notes Drawer (Press S)" title="Speaker Notes (S)">
+          <span aria-hidden="true">📝</span> Notes
+        </button>
+
+        <!-- Pop-Out Notes Button -->
+        <button id="popoutNotesBtn" class="tool-btn" aria-label="Open Presenter Window in new window (Press P)" title="Pop-out Presenter Window (P)">
+          <span aria-hidden="true">↗️</span> Pop-out
+        </button>
+
+        <!-- Slide Overview Grid Toggle -->
+        <button id="overviewToggleBtn" class="tool-btn" aria-label="Toggle Slide Overview Grid (Press O)" title="Slide Overview (O)">
+          <span aria-hidden="true">⊞</span> Grid
+        </button>
+
+        <!-- Fullscreen Toggle -->
+        <button id="fullscreenToggleBtn" class="tool-btn" aria-label="Toggle Fullscreen Mode (Press F)" title="Fullscreen (F)">
+          <span aria-hidden="true">⛶</span> Fullscreen
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. Main Slide Viewport -->
+    <main class="slide-viewport" id="slideViewport" role="region" aria-label="Presentation Slides">
+      
+      <!-- SLIDE 1: Hero Hook & Title -->
+      <section class="slide active" data-slide="1" data-title="Project 2: Customer Support Triage Agent" role="region" aria-roledescription="slide" aria-label="Slide 1 of 14: Project 2 - Customer Support Triage Agent" aria-hidden="false">
+        <div class="slide-content hero-slide">
+          <div class="hero-tag-group">
+            <span class="tag-pill pulse"><span class="pulse-dot" aria-hidden="true"></span> 2026 Production Edition</span>
+            <span class="tag-pill">Supervisor Pattern</span>
+            <span class="tag-pill">Human-in-the-Loop</span>
+            <span class="tag-pill">OpenRouter & Fallbacks</span>
+            <span class="tag-pill">LangGraph StateGraph</span>
+          </div>
+
+          <h1 class="hero-title">
+            Customer Support <span class="gradient-text">Triage Agent</span>
+          </h1>
+          <h2 class="hero-subtitle">
+            Orchestrating 3 Specialist Sub-Agents with Zero-Shot Routing, Sentiment Intelligence & MemorySaver Checkpoints
+          </h2>
+
+          <div class="hero-stats-grid">
+            <div class="stat-card">
+              <span class="stat-num">3</span>
+              <span class="stat-label">Specialist Agents</span>
+              <span class="stat-sub">Billing, Tech & Escalation</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">1</span>
+              <span class="stat-label">Supervisor Brain</span>
+              <span class="stat-sub">Zero-Shot Intent & Sentiment</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">$50</span>
+              <span class="stat-label">Deterministic Gate</span>
+              <span class="stat-sub">Strict Financial Safety Rule</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">HITL</span>
+              <span class="stat-label">Human-in-the-Loop</span>
+              <span class="stat-sub">Native MemorySaver Checkpoint</span>
+            </div>
+          </div>
+
+          <div class="hero-footer-hint">
+            <span>Press <kbd>→</kbd> or <kbd>Space</kbd> to start • Press <kbd>S</kbd> for notes • <kbd>P</kbd> for dual-monitor presenter window</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: The Core Problem -->
+      <section class="slide" data-slide="2" data-title="The Crisis: Why Monolithic Bots Fail" role="region" aria-roledescription="slide" aria-label="Slide 2 of 14: The Crisis - Why Monolithic Bots Fail" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">ARCHITECTURAL REALITY</div>
+          <h2 class="slide-title">The Support Automation Crisis: <span class="text-danger">Why Monoliths Fail</span></h2>
+          <p class="slide-desc">Building support agents with a single massive prompt or a linear chain inevitably leads to disaster in enterprise production.</p>
+
+          <div class="comparison-grid-3">
+            <div class="pattern-card flawed-1">
+              <span class="card-badge fail">FLAW 1: THE MONOLITH</span>
+              <h3>Single Agent + 20 Tools</h3>
+              <p class="pattern-desc">One prompt loaded with SQL queries, refund endpoints, KB docs, and reboot scripts.</p>
+              <ul class="pattern-list">
+                <li><strong>Tool Hallucination:</strong> The model calls `process_refund` when answering a simple product question.</li>
+                <li><strong>Context Explosion:</strong> 8,000+ tokens of policy docs bloated into every single prompt call.</li>
+                <li><strong>Zero Authorization Gates:</strong> No deterministic boundary between low-risk and high-risk actions.</li>
+              </ul>
+            </div>
+
+            <div class="pattern-card flawed-2">
+              <span class="card-badge warning">FLAW 2: SEQUENTIAL CHAIN</span>
+              <h3>Linear Pipeline (A → B → C)</h3>
+              <p class="pattern-desc">Every customer ticket passes through every single agent in sequence.</p>
+              <ul class="pattern-list">
+                <li><strong>Crippling Latency:</strong> 15-20 seconds per ticket as unrelated agents evaluate queries.</li>
+                <li><strong>3x Token Costs:</strong> Paying for 3 LLM calls on a routine $5 password reset ticket.</li>
+                <li><strong>Tainted State Cascades:</strong> If Agent A hallucinates, downstream agents act on false premises.</li>
+              </ul>
+            </div>
+
+            <div class="pattern-card winner">
+              <span class="card-badge success">THE SOLUTION: SUPERVISOR</span>
+              <h3>LangGraph Supervisor Pattern</h3>
+              <p class="pattern-desc">A lightweight meta-controller routes tickets to isolated 2-tool specialist sub-agents.</p>
+              <ul class="pattern-list">
+                <li><strong>Domain Isolation:</strong> Each specialist only holds 2-3 tools relevant to its specific jurisdiction.</li>
+                <li><strong>Dynamic Zero-Shot Routing:</strong> Fast, cheap triage with sentiment & priority classification.</li>
+                <li><strong>Deterministic Safety Gates:</strong> Financial & legal thresholds route to Human-in-the-Loop checkpoints.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 3: Architecture Topology -->
+      <section class="slide" data-slide="3" data-title="Architecture Topology & LangGraph Flow" role="region" aria-roledescription="slide" aria-label="Slide 3 of 14: Architecture Topology & LangGraph Flow" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">LANGGRAPH STATEGRAPH TOPOLOGY</div>
+          <h2 class="slide-title">Visualizing the <span class="gradient-text">State Machine Flow</span></h2>
+          <p class="slide-desc">How messages, metadata, and decision trees traverse our compiled LangGraph StateGraph.</p>
+
+          <div class="arch-container">
+            <div class="spotlight-diagram">
+              <div class="graph-box">
+                <div class="node start">START (Customer Ticket Ingested)</div>
+                <div class="arrow" aria-hidden="true">↓</div>
+                <div class="node supervisor-node">Supervisor & Sentiment Router</div>
+                <div class="branch-container">
+                  <div class="branch">
+                    <span class="branch-label">Billing Intent</span>
+                    <div class="node specialist">Billing Specialist<br><small>Invoices, $50 Policy Gate</small></div>
+                  </div>
+                  <div class="branch">
+                    <span class="branch-label">Technical Intent</span>
+                    <div class="node specialist">Tech Specialist<br><small>KB Search, 503 Diagnostics</small></div>
+                  </div>
+                  <div class="branch">
+                    <span class="branch-label">VIP / Legal</span>
+                    <div class="node specialist">Escalation Specialist<br><small>VIP SLAs, Legal Escalation</small></div>
+                  </div>
+                </div>
+                <div class="arrow" aria-hidden="true">↓ (if requires_human_approval == True)</div>
+                <div class="node hitl-node">🚨 Human Review Checkpoint (MemorySaver Pause)</div>
+                <div class="arrow" aria-hidden="true">↓ (Approve / Edit / Reject)</div>
+                <div class="node end">Auto Resolver / Delivered Customer Response → END</div>
+              </div>
+            </div>
+
+            <div class="arch-explanations">
+              <div class="arch-card">
+                <h4>🔀 Dynamic Conditional Edges</h4>
+                <p>Routing is not hardcoded. The supervisor inspects intent and outputs a routing key that triggers LangGraph's <code>add_conditional_edges()</code>.</p>
+              </div>
+              <div class="arch-card">
+                <h4>🛡️ Convergence at Safety Gate</h4>
+                <p>All specialists converge on a conditional branch: if approval is flagged, state routes to <code>human_review</code>; otherwise, it resolves instantly.</p>
+              </div>
+              <div class="arch-card">
+                <h4>💾 Thread Persistence</h4>
+                <p>Every ticket executes under a unique <code>thread_id</code> backed by <code>MemorySaver()</code>, allowing effortless interruption and resumption.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 4: Shared State Schema & add_messages Reducer -->
+      <section class="slide" data-slide="4" data-title="Shared State Schema & Reducer" role="region" aria-roledescription="slide" aria-label="Slide 4 of 14: Shared State Schema & Reducer" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">STATE ENGINE DEEP DIVE</div>
+          <h2 class="slide-title">The Single Source of Truth: <span class="gradient-text">TriageState Schema</span></h2>
+          <p class="slide-desc">In LangGraph, state is a typed contract passed between nodes. Here is our complete production schema.</p>
+
+          <div class="state-container">
+            <div class="code-window">
+              <div class="code-header">
+                <div class="code-dots">
+                  <span class="code-dot red"></span>
+                  <span class="code-dot yellow"></span>
+                  <span class="code-dot green"></span>
+                </div>
+                <span class="code-title">src/state.py — TriageState</span>
+              </div>
+              <pre class="code-content"><code><span class="keyword">class</span> <span class="type">TriageState</span>(TypedDict):
+    <span class="comment"># 1. Message Channel with Reducer</span>
+    <span class="prop">messages</span>: <span class="highlight">Annotated[List[BaseMessage], add_messages]</span>
+
+    <span class="comment"># 2. Metadata & Classification</span>
+    <span class="prop">ticket_id</span>: <span class="type">str</span>
+    <span class="prop">customer_id</span>: <span class="type">str</span>
+    <span class="prop">customer_tier</span>: <span class="type">Literal["free", "pro", "enterprise"]</span>
+    <span class="prop">ticket_category</span>: <span class="type">Optional[Literal["billing", "technical", "escalation"]]</span>
+    <span class="prop">sentiment</span>: <span class="type">Optional[Literal["POSITIVE", "NEUTRAL", "FRUSTRATED", "ANGRY"]]</span>
+    <span class="prop">priority</span>: <span class="type">Optional[Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]]</span>
+    <span class="prop">churn_risk</span>: <span class="type">Optional[bool]</span>
+
+    <span class="comment"># 3. Actions & Approvals</span>
+    <span class="prop">draft_response</span>: <span class="type">Optional[str]</span>
+    <span class="prop">actions_taken</span>: <span class="type">List[str]</span>
+    <span class="prop">requires_human_approval</span>: <span class="type">bool</span>
+    <span class="prop">approval_reason</span>: <span class="type">Optional[str]</span>
+    <span class="prop">human_decision</span>: <span class="type">Optional[Literal["approve", "reject", "edit"]]</span>
+    <span class="prop">final_response</span>: <span class="type">Optional[str]</span>
+    <span class="prop">status</span>: <span class="type">Literal["open", "pending_approval", "resolved"]</span></code></pre>
+            </div>
+
+            <div class="state-cards-col">
+              <div class="state-expl-card">
+                <h4>🔄 The <code>add_messages</code> Reducer</h4>
+                <p>By default, LangGraph overwrites state keys. The <code>add_messages</code> reducer tells LangGraph to <strong>append</strong> new messages to conversation history and automatically deduplicate messages with matching IDs.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>🔒 Channel Isolation</h4>
+                <p>Specialist nodes only return the specific keys they update (e.g. <code>{"draft_response": "...", "actions_taken": [...]}</code>). LangGraph immutably merges them into the state snapshot.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>📊 Audit Trail & Observability</h4>
+                <p>The <code>actions_taken</code> list accumulates an audit log of every tool execution (e.g., <code>"Checked invoice INV-001"</code>), essential for compliance and human review.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 5: Supervisor Node: Intent & Sentiment Intelligence -->
+      <section class="slide" data-slide="5" data-title="Supervisor Node: Zero-Shot Routing" role="region" aria-roledescription="slide" aria-label="Slide 5 of 14: Supervisor Node - Zero-Shot Routing" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">THE META-CONTROLLER</div>
+          <h2 class="slide-title">The Supervisor Node: <span class="gradient-text">Sentiment & Intent Intelligence</span></h2>
+          <p class="slide-desc">Why evaluating customer sentiment BEFORE routing changes the game for support automation.</p>
+
+          <div class="agent-grid">
+            <div class="agent-specs-card">
+              <div class="agent-role-header">
+                <div class="role-icon" aria-hidden="true">🧠</div>
+                <div class="role-meta">
+                  <h3>Supervisor Node</h3>
+                  <span>src/agents/supervisor.py • Meta-Controller</span>
+                </div>
+              </div>
+
+              <div class="specs-section-title">Classification Dimensions</div>
+              <div class="tools-tag-list">
+                <span class="tool-tag">Category: billing | tech | escalation</span>
+                <span class="tool-tag">Sentiment: POSITIVE | NEUTRAL | FRUSTRATED | ANGRY</span>
+                <span class="tool-tag">Priority: LOW | MEDIUM | HIGH | CRITICAL</span>
+                <span class="tool-tag">Churn Risk: True | False</span>
+              </div>
+
+              <div class="specs-section-title">Core Routing Logic</div>
+              <ul class="rules-list">
+                <li>Evaluates raw customer query using structured JSON output schema.</li>
+                <li>Flags churn risk immediately if customer threatens cancellation or chargebacks.</li>
+                <li>Calculates urgency: Enterprise customers with angry sentiment automatically elevated to CRITICAL priority.</li>
+                <li>Executes zero-shot routing without invoking external tools, keeping supervisor latency under 600ms.</li>
+              </ul>
+            </div>
+
+            <div class="state-cards-col">
+              <div class="state-expl-card">
+                <h4>🎯 Zero Tool Confusion</h4>
+                <p>The supervisor does NOT hold business tools. Its sole responsibility is classification and routing. This eliminates 100% of tool misuse errors at the front door.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>⚡ Sentiment Informs Specialist Behavior</h4>
+                <p>When the Billing Specialist receives an <code>ANGRY</code> sentiment flag, its prompt switches from casual FAQ mode to high-empathy de-escalation tone automatically.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>💰 80% Cost Savings</h4>
+                <p>Fast classification models (e.g. <code>gpt-4o-mini</code> or <code>claude-3-5-haiku</code>) can handle the supervisor node, saving expensive frontier reasoning for complex diagnostic sub-agents.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 6: Billing Specialist & The $50 Policy Gate -->
+      <section class="slide" data-slide="6" data-title="Billing Specialist & The $50 Gate" role="region" aria-roledescription="slide" aria-label="Slide 6 of 14: Billing Specialist & The $50 Gate" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">SPECIALIST SUB-AGENT 1</div>
+          <h2 class="slide-title">Billing Specialist: <span class="gradient-text">Invoices & The $50 Gate</span></h2>
+          <p class="slide-desc">Combining LLM empathy with deterministic, non-negotiable financial guardrails.</p>
+
+          <div class="agent-grid">
+            <div class="agent-specs-card">
+              <div class="agent-role-header">
+                <div class="role-icon" aria-hidden="true">💳</div>
+                <div class="role-meta">
+                  <h3>Billing Specialist Agent</h3>
+                  <span>src/agents/billing_agent.py • Financial Sub-Agent</span>
+                </div>
+              </div>
+
+              <div class="specs-section-title">Jurisdiction & Tools</div>
+              <div class="tools-tag-list">
+                <span class="tool-tag">lookup_invoice(invoice_id)</span>
+                <span class="tool-tag">process_refund(invoice_id, amount)</span>
+                <span class="tool-tag">check_subscription_status(cust_id)</span>
+              </div>
+
+              <div class="specs-section-title">The $50 Policy Gate (Code Enforced)</div>
+              <ul class="rules-list">
+                <li>Refunds ≤ $50 for routine billing errors: Auto-approved and processed directly.</li>
+                <li><strong>Refunds &gt; $50:</strong> Mandatory checkpoint. The agent prepares the draft but sets <code>requires_human_approval = True</code>.</li>
+                <li><strong>Angry Sentiment + Billing:</strong> Triggers human review regardless of refund amount to preserve customer relationship.</li>
+              </ul>
+            </div>
+
+            <div class="code-window">
+              <div class="code-header">
+                <div class="code-dots">
+                  <span class="code-dot red"></span>
+                  <span class="code-dot yellow"></span>
+                  <span class="code-dot green"></span>
+                </div>
+                <span class="code-title">Deterministic Python Guardrail</span>
+              </div>
+              <pre class="code-content"><code><span class="comment"># NEVER leave financial limits to LLM prompt persuasion!</span>
+<span class="keyword">if</span> refund_amount > settings.REFUND_APPROVAL_THRESHOLD:  <span class="comment"># $50.00</span>
+    state_update = {
+        <span class="prop">"requires_human_approval"</span>: <span class="keyword">True</span>,
+        <span class="prop">"approval_reason"</span>: (
+            <span class="string">f"Refund of ${refund_amount:.2f} exceeds "</span>
+            <span class="string">f"${settings.REFUND_APPROVAL_THRESHOLD:.2f} safety threshold."</span>
+        ),
+        <span class="prop">"draft_response"</span>: draft_text,
+        <span class="prop">"status"</span>: <span class="string">"pending_approval"</span>,
+    }
+    <span class="keyword">return</span> state_update</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7: Technical Specialist & KB Diagnostics -->
+      <section class="slide" data-slide="7" data-title="Technical Specialist & Diagnostics" role="region" aria-roledescription="slide" aria-label="Slide 7 of 14: Technical Specialist & Diagnostics" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">SPECIALIST SUB-AGENT 2</div>
+          <h2 class="slide-title">Technical Specialist: <span class="gradient-text">503 Outages & KB Search</span></h2>
+          <p class="slide-desc">Diagnosing cryptic stack traces, querying internal knowledge bases, and suggesting precise code fixes.</p>
+
+          <div class="agent-grid">
+            <div class="agent-specs-card">
+              <div class="agent-role-header">
+                <div class="role-icon" aria-hidden="true">⚙️</div>
+                <div class="role-meta">
+                  <h3>Technical Specialist Agent</h3>
+                  <span>src/agents/tech_agent.py • Engineering Sub-Agent</span>
+                </div>
+              </div>
+
+              <div class="specs-section-title">Jurisdiction & Tools</div>
+              <div class="tools-tag-list">
+                <span class="tool-tag">search_knowledge_base(query)</span>
+                <span class="tool-tag">check_system_status(service_name)</span>
+                <span class="tool-tag">get_api_documentation(endpoint)</span>
+              </div>
+
+              <div class="specs-section-title">Handling Messy Real-World Technical Tickets</div>
+              <ul class="rules-list">
+                <li>Parses raw stack traces (e.g. <code>HTTP 503: upstream worker pool exhausted</code>).</li>
+                <li>Cross-references internal incident status page before blaming customer configuration.</li>
+                <li>Extracts API rate limits and code examples directly from verified documentation.</li>
+                <li>Auto-resolves 95% of routine technical inquiries with zero human intervention needed.</li>
+              </ul>
+            </div>
+
+            <div class="state-cards-col">
+              <div class="state-expl-card">
+                <h4>🔍 Grounded Knowledge Retrieval</h4>
+                <p>The agent searches a curated technical knowledge base rather than relying on LLM memory. Prevents hallucinating outdated API parameters or false service promises.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>🛠️ Sandbox Actions</h4>
+                <p>In advanced configurations, the technical specialist can trigger sandbox verification runs or regenerate test API keys within safe boundaries.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>🤝 Seamless Escalation</h4>
+                <p>If the error indicates an active Sev-1 production outage, the agent flags the issue for executive incident management.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8: Escalation Specialist & VIP SLA Protocol -->
+      <section class="slide" data-slide="8" data-title="Escalation Specialist & VIP SLAs" role="region" aria-roledescription="slide" aria-label="Slide 8 of 14: Escalation Specialist & VIP SLAs" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">SPECIALIST SUB-AGENT 3</div>
+          <h2 class="slide-title">Escalation Specialist: <span class="gradient-text">VIP SLAs & Legal Protection</span></h2>
+          <p class="slide-desc">Protecting enterprise relationships when contract breaches or litigation threats arise.</p>
+
+          <div class="agent-grid">
+            <div class="agent-specs-card">
+              <div class="agent-role-header">
+                <div class="role-icon" aria-hidden="true">🚨</div>
+                <div class="role-meta">
+                  <h3>Escalation Specialist Agent</h3>
+                  <span>src/agents/escalation_agent.py • Crisis Sub-Agent</span>
+                </div>
+              </div>
+
+              <div class="specs-section-title">Jurisdiction & Tools</div>
+              <div class="tools-tag-list">
+                <span class="tool-tag">escalate_to_vip_queue(ticket_id)</span>
+                <span class="tool-tag">check_enterprise_sla(cust_id)</span>
+                <span class="tool-tag">notify_account_lead(email, urgency)</span>
+              </div>
+
+              <div class="specs-section-title">Executive Protection Rules</div>
+              <ul class="rules-list">
+                <li>Detects legal keywords (e.g. <em>lawyer, litigation, contract damages, subpoena</em>).</li>
+                <li>Checks customer contract tier: Enterprise CTOs receive instant dedicated queue routing.</li>
+                <li><strong>Mandatory Human Gate:</strong> 100% of escalation tickets require human manager approval. The agent NEVER sends an unreviewed response to an attorney threat.</li>
+              </ul>
+            </div>
+
+            <div class="state-cards-col">
+              <div class="state-expl-card">
+                <h4>⚖️ Zero Legal Liability</h4>
+                <p>Autonomous agents must never make legally binding statements or admit contract breaches without counsel. The HITL checkpoint guarantees executive sign-off.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>⏱️ SLA Clock Awareness</h4>
+                <p>Calculates remaining SLA breach window (e.g. 30-minute enterprise response guarantee) and displays countdown timers in support dashboards.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>👔 Human Draft Preparation</h4>
+                <p>The agent drafts a polished, de-escalating holding response for the account executive, reducing human drafting time from 15 minutes to 30 seconds.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9: Human-in-the-Loop (HITL) Mechanics -->
+      <section class="slide" data-slide="9" data-title="Human-in-the-Loop Mechanics" role="region" aria-roledescription="slide" aria-label="Slide 9 of 14: Human-in-the-Loop Mechanics" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">STATE PERSISTENCE & CONTROL</div>
+          <h2 class="slide-title">Human-in-the-Loop: <span class="gradient-text">MemorySaver Checkpoints</span></h2>
+          <p class="slide-desc">How LangGraph natively interrupts execution, serializes state to memory, and resumes seamlessly.</p>
+
+          <div class="hitl-lifecycle-grid">
+            <div class="lifecycle-step">
+              <span class="step-number">PHASE 1</span>
+              <h4>The Safety Trigger</h4>
+              <p>Specialist detects a high-stakes action ($250 refund or lawsuit threat) and sets <code>requires_human_approval = True</code>.</p>
+            </div>
+
+            <div class="lifecycle-step">
+              <span class="step-number">PHASE 2</span>
+              <h4>The Native Interrupt</h4>
+              <p>Because <code>interrupt_before=["human_review"]</code> is configured, LangGraph freezes graph execution and serializes state to <code>MemorySaver</code>.</p>
+            </div>
+
+            <div class="lifecycle-step">
+              <span class="step-number">PHASE 3</span>
+              <h4>Human Review</h4>
+              <p>Manager inspects state via CLI or REST API. Decides to <strong>Approve</strong>, <strong>Edit Response</strong>, or <strong>Reject</strong> with feedback.</p>
+            </div>
+
+            <div class="lifecycle-step">
+              <span class="step-number">PHASE 4</span>
+              <h4>State Resumption</h4>
+              <p><code>graph.update_state()</code> injects human feedback, and <code>graph.invoke(None, config)</code> resumes execution straight to <code>END</code>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 10: Interactive Live Simulation Studio (Enterprise 1,000 Tickets) -->
+      <section class="slide slide-dataset" data-slide="10" data-title="Enterprise Dataset Studio: 1,000 Tickets" role="region" aria-roledescription="slide" aria-label="Slide 10 of 14: Enterprise Dataset Studio - 1,000 Tickets" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">ENTERPRISE DATASET & SIMULATION ENGINE</div>
+          <h2 class="slide-title">Dataset Studio: <span class="gradient-text">1,000 Production Tickets</span></h2>
+          <p class="slide-desc">Explore 1,000 authentic enterprise tickets ($216K+ disputes, SAML SSO errors, VIP SLAs). Search, filter, and step through our multi-agent LangGraph supervisor.</p>
+
+          <!-- Compact Dataset KPI Ribbon -->
+          <div class="dataset-kpi-bar" id="datasetKpiBar">
+            <div class="kpi-chip">
+              <span class="kpi-lbl">Dataset:</span>
+              <span class="kpi-num" id="kpiTotal">1,000</span>
+              <span class="kpi-sub">Tickets (450 Tech • 350 Billing • 200 Esc)</span>
+            </div>
+            <div class="kpi-chip">
+              <span class="kpi-lbl">Disputed:</span>
+              <span class="kpi-num" id="kpiDisputed">$216,700</span>
+              <span class="kpi-sub">Total ($619 Avg)</span>
+            </div>
+            <div class="kpi-chip">
+              <span class="kpi-lbl">Human Gate:</span>
+              <span class="kpi-num" id="kpiHitl">37.4%</span>
+              <span class="kpi-sub">(374 Triggers)</span>
+            </div>
+            <div class="kpi-chip">
+              <span class="kpi-lbl">Churn Risk:</span>
+              <span class="kpi-num" id="kpiChurn">25.0%</span>
+              <span class="kpi-sub">(250 At-Risk)</span>
+            </div>
+          </div>
+
+          <div class="sim-studio-container">
+            <!-- Left Sidebar: Ticket Search, Filter, & Selector -->
+            <div class="sim-tickets-sidebar">
+              <!-- Search Bar -->
+              <div class="sim-sidebar-search">
+                <input type="text" id="datasetSearchInput" placeholder="🔍 Search 1,000 tickets (ID, text, customer)..." aria-label="Search dataset tickets">
+              </div>
+
+              <!-- Category Filter Chips -->
+              <div class="sim-filter-chips" id="datasetFilterChips" role="tablist" aria-label="Filter tickets by category">
+                <button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">All (1,000)</button>
+                <button class="filter-chip" data-filter="billing" role="tab" aria-selected="false">Billing (350)</button>
+                <button class="filter-chip" data-filter="technical" role="tab" aria-selected="false">Tech (450)</button>
+                <button class="filter-chip" data-filter="escalation" role="tab" aria-selected="false">Escalation (200)</button>
+                <button class="filter-chip" data-filter="hitl" role="tab" aria-selected="false">🚨 HITL (374)</button>
+              </div>
+
+              <div class="sim-sidebar-title" id="datasetCountTitle">DATASET TICKETS (1,000)</div>
+              <div class="sim-tickets-scrollable" id="simTicketsList" role="listbox" aria-label="Select Support Ticket">
+                <!-- Dynamically populated via script.js -->
+              </div>
+            </div>
+
+            <!-- Right Stage: Execution Flow -->
+            <div class="sim-stage">
+              <div class="sim-toolbar">
+                <div class="sim-ticket-heading">
+                  <div class="sim-ticket-title-row">
+                    <span class="sim-active-id-badge" id="simActiveIdBadge">TIK-1721</span>
+                    <h3 id="simActiveTicketTitle" class="sim-ticket-title">HTTP 503 Service Unavailable on /v2/sync pipeline</h3>
+                  </div>
+                  <div id="simActiveTicketMeta" class="sim-ticket-meta">Customer: Benjamin Sharma (Synergy Workspace) • Tier: FREE • Channel: web_portal</div>
+                </div>
+
+                <div class="sim-toolbar-right">
+                  <span class="sim-step-badge" id="simStepBadge">Step 0 / 4: Ready</span>
+                  <div class="sim-controls-group">
+                    <button id="simPrevStepBtn" class="sim-ctrl-btn prev" title="Previous Step (Step Backward)" aria-label="Step Backward" disabled>
+                      <span class="ctrl-icon">⏮</span> Prev
+                    </button>
+                    <button id="simNextStepBtn" class="sim-ctrl-btn primary" title="Next Step (Step Forward)" aria-label="Step Forward">
+                      Next Step <span class="ctrl-icon">⏭</span>
+                    </button>
+                    <button id="simAutoPlayBtn" class="sim-ctrl-btn play" title="Auto Play / Pause Simulation" aria-label="Auto Play">
+                      <span class="ctrl-icon" id="simPlayIcon">▶</span> <span id="simPlayText">Auto Play</span>
+                    </button>
+                    <button id="simResetBtn" class="sim-ctrl-btn reset" title="Reset Simulation" aria-label="Reset Simulation">
+                      <span class="ctrl-icon">🔄</span> Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ticket Detail Preview Box -->
+              <div class="sim-ticket-preview" id="simTicketPreview">
+                <div class="preview-header">
+                  <span class="preview-icon">✉️</span>
+                  <span class="preview-subject" id="simPreviewSubject">HTTP 503 Service Unavailable on /v2/sync pipeline</span>
+                </div>
+                <div class="preview-body" id="simPreviewBody">Ticket message content will be displayed here...</div>
+              </div>
+
+              <!-- Mini Diagram Flow -->
+              <div class="sim-diagram-mini">
+                <div class="sim-node" id="simNodeStart">START</div>
+                <div class="arrow">→</div>
+                <div class="sim-node" id="simNodeSupervisor">Supervisor</div>
+                <div class="arrow">→</div>
+                <div class="sim-node" id="simNodeSpecialist">Specialist</div>
+                <div class="arrow">→</div>
+                <div class="sim-node" id="simNodeHITL">Human Gate</div>
+                <div class="arrow">→</div>
+                <div class="sim-node" id="simNodeEnd">END</div>
+              </div>
+
+              <!-- Triage State Badges -->
+              <div class="sim-state-badges">
+                <span class="sim-badge">Category: <strong id="simBadgeCat">—</strong></span>
+                <span class="sim-badge">Sentiment: <strong id="simBadgeSent">—</strong></span>
+                <span class="sim-badge">Priority: <strong id="simBadgePrio">—</strong></span>
+                <span class="sim-badge">Churn Risk: <strong id="simBadgeChurn">—</strong></span>
+                <span class="sim-badge">Specialist: <strong id="simBadgeSpec">—</strong></span>
+                <span class="sim-badge" id="simBadgeDisputeContainer" style="display: none;">Disputed: <strong id="simBadgeDispute" style="color: var(--accent-rose);">$0.00</strong></span>
+              </div>
+
+              <!-- HITL Interactive Checkpoint Panel -->
+              <div class="sim-hitl-panel" id="simHitlPanel">
+                <div style="font-weight: 800; color: var(--accent-rose); font-size: 0.95rem; margin-bottom: 0.3rem;">
+                  🚨 HUMAN-IN-THE-LOOP CHECKPOINT TRIGGERED
+                </div>
+                <p id="simHitlReason" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.6rem;">
+                  Reason: Refund amount exceeds $50 threshold.
+                </p>
+                <div class="sim-hitl-actions">
+                  <button class="hitl-btn approve" id="simHitlApproveBtn">✓ Approve Draft</button>
+                  <button class="hitl-btn edit" id="simHitlEditBtn">✏️ Edit Response</button>
+                  <button class="hitl-btn reject" id="simHitlRejectBtn">✕ Reject</button>
+                </div>
+              </div>
+
+              <!-- Terminal Output Box -->
+              <div class="sim-output-box" id="simOutputBox">
+                [Ready] Click "Run Simulation" to execute ticket through LangGraph...
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 11: LLM Gateway & OpenRouter Provider Strategy -->
+      <section class="slide" data-slide="11" data-title="LLM Gateway & OpenRouter" role="region" aria-roledescription="slide" aria-label="Slide 11 of 14: LLM Gateway & OpenRouter" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">MULTI-MODEL ORCHESTRATION</div>
+          <h2 class="slide-title">LLM Gateway: <span class="gradient-text">OpenRouter & Zero-Cost Fallbacks</span></h2>
+          <p class="slide-desc">Eliminating vendor lock-in with a unified LLM gateway supporting OpenRouter, frontier models, and offline mock fallbacks.</p>
+
+          <div class="llm-grid">
+            <div class="llm-card">
+              <span class="llm-badge">OPENROUTER INTEGRATION</span>
+              <h3>Single API, 100+ Models</h3>
+              <p>Using <code>src/llm.py</code>, we configure OpenRouter as the primary LLM provider. One API key unlocks OpenAI, Anthropic, Meta, and NVIDIA models seamlessly.</p>
+              <div class="llm-spec-box">
+                LLM_PROVIDER=openrouter<br>
+                MODEL_NAME=nvidia/nemotron-3.5-lightning:free<br>
+                MODEL_TEMPERATURE=0.0
+              </div>
+            </div>
+
+            <div class="llm-card">
+              <span class="llm-badge">SMART MODEL TIERING</span>
+              <h3>Cost-Optimized Routing</h3>
+              <p>Routing simple supervisor intent classification to ultra-fast, cheap models (GPT-4o-mini / Haiku) while reserving frontier models for complex technical debugging.</p>
+              <div class="llm-spec-box">
+                Supervisor: $0.15 / 1M tokens (gpt-4o-mini)<br>
+                Specialists: Free Tier / Llama 3.3 70B<br>
+                Savings: 82% cost reduction vs monolithic bot
+              </div>
+            </div>
+
+            <div class="llm-card">
+              <span class="llm-badge">OFFLINE ZERO-COST MOCK</span>
+              <h3>Zero API Key Required</h3>
+              <p>If students run the project without an OpenRouter key, the built-in <code>MockChatSupportModel</code> kicks in automatically. 100% of unit tests pass offline with zero spend.</p>
+              <div class="llm-spec-box">
+                Fallback: Built-in Mock Support Model<br>
+                Deterministic JSON structured output<br>
+                Instant unit test execution (0.02s)
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 12: Production Deployment & CLI Runner -->
+      <section class="slide" data-slide="12" data-title="Production Deployment & CLI Runner" role="region" aria-roledescription="slide" aria-label="Slide 12 of 14: Production Deployment & CLI Runner" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">ENTERPRISE READINESS & TOOLING</div>
+          <h2 class="slide-title">Production Deployment: <span class="gradient-text">FastAPI & CLI Runner</span></h2>
+          <p class="slide-desc">From interactive terminal stress-testing to enterprise FastAPI REST endpoints with Swagger UI.</p>
+
+          <div class="deploy-grid">
+            <div class="deploy-card">
+              <span class="deploy-badge">FASTAPI REST API</span>
+              <h3>Async REST Endpoints</h3>
+              <p>In <code>src/api.py</code>, our compiled StateGraph is exposed as production-ready HTTP endpoints with OpenAPI / Swagger documentation.</p>
+              <ul class="deploy-checklist">
+                <li>✓ <code>POST /api/tickets/triage</code> — Submit new ticket</li>
+                <li>✓ <code>GET /api/tickets/{id}/state</code> — Inspect thread state</li>
+                <li>✓ <code>POST /api/tickets/{id}/resume</code> — Resume HITL checkpoint</li>
+                <li>✓ <code>GET /health</code> — Liveness probe for Kubernetes</li>
+              </ul>
+            </div>
+
+            <div class="deploy-card">
+              <span class="deploy-badge">CLI RUNNER SUITE</span>
+              <h3>run_triage.py Runner</h3>
+              <p>A multi-mode terminal runner built with Python <code>rich</code> for instant live testing and stress-testing.</p>
+              <ul class="deploy-checklist">
+                <li>✓ <code>--mode interactive</code> — Interactive prompt with live HITL</li>
+                <li>✓ <code>--mode batch</code> — Stress-tests all 6 messy tickets</li>
+                <li>✓ <code>--mode diagram</code> — Prints ASCII & Mermaid topology</li>
+                <li>✓ Python virtual environment: <code>.venv\Scripts\python</code></li>
+              </ul>
+            </div>
+
+            <div class="deploy-card">
+              <span class="deploy-badge">OBSERVABILITY & PERSISTENCE</span>
+              <h3>LangSmith & PostgresSaver</h3>
+              <p>Replacing development <code>MemorySaver</code> with <code>PostgresSaver</code> for durable multi-server persistence across container restarts.</p>
+              <ul class="deploy-checklist">
+                <li>✓ Full LangSmith execution tracing</li>
+                <li>✓ Token bucket rate limiting per tier (Free vs Pro)</li>
+                <li>✓ State time-travel: Replay any ticket execution</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 13: Interactive Knowledge Check (Quiz 3) -->
+      <section class="slide" data-slide="13" data-title="Knowledge Check: Quiz 3" role="region" aria-roledescription="slide" aria-label="Slide 13 of 14: Knowledge Check - Quiz 3" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">INTERACTIVE KNOWLEDGE CHECK</div>
+          <h2 class="slide-title">Quiz 3: <span class="gradient-text">Test Your Understanding</span></h2>
+          <p class="slide-desc">Select a question below and test your mastery of LangGraph multi-agent architecture.</p>
+
+          <div class="quiz-container">
+            <div class="quiz-nav-sidebar" id="quizNavList">
+              <div class="quiz-nav-title">QUESTIONS (5)</div>
+              <button class="quiz-btn-item active" data-q="0">Q1: Supervisor Pattern</button>
+              <button class="quiz-btn-item" data-q="1">Q2: interrupt_before</button>
+              <button class="quiz-btn-item" data-q="2">Q3: Resuming Threads</button>
+              <button class="quiz-btn-item" data-q="3">Q4: add_messages Reducer</button>
+              <button class="quiz-btn-item" data-q="4">Q5: Safety Guardrails</button>
+            </div>
+
+            <div class="quiz-stage">
+              <div class="quiz-question-text" id="quizQuestionText">
+                Why is the Supervisor Pattern preferred over a linear agent chain for multi-department customer support?
+              </div>
+
+              <div class="quiz-options-list" id="quizOptionsList">
+                <!-- Injected via JavaScript -->
+              </div>
+
+              <div class="quiz-explanation-box" id="quizExplanationBox">
+                <!-- Injected via JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 14: Summary & Trophy Challenge Solution -->
+      <section class="slide" data-slide="14" data-title="Summary & Trophy Challenge" role="region" aria-roledescription="slide" aria-label="Slide 14 of 14: Summary & Trophy Challenge" aria-hidden="true">
+        <div class="slide-content">
+          <div class="section-label">WRAP-UP & TROPHY SOLUTION</div>
+          <h2 class="slide-title">Key Takeaways & <span class="gradient-text">The Trophy Challenge</span></h2>
+          <p class="slide-desc">Review the core architectural principles and inspect the verified solution for the Sentiment-Priority challenge.</p>
+
+          <div class="summary-container">
+            <div class="state-cards-col">
+              <div class="state-expl-card">
+                <h4>1. The Supervisor Architecture</h4>
+                <p>Separating triage intelligence from business tools eliminates tool confusion, slashes latency, and isolates failure domains.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>2. Deterministic Financial Safety</h4>
+                <p>Never rely on LLM prompts to enforce financial limits. Strict Python code gates prevent disastrous refunds.</p>
+              </div>
+              <div class="state-expl-card">
+                <h4>3. Native Human Checkpointing</h4>
+                <p>LangGraph's <code>interrupt_before</code> and <code>MemorySaver</code> turn complex async human approval workflows into simple primitives.</p>
+              </div>
+            </div>
+
+            <div class="trophy-card">
+              <div class="trophy-icon" aria-hidden="true">🏆</div>
+              <h3>Trophy Challenge: Sentiment-Based Priority Rule</h3>
+              <p>Traditional routers treat all tickets equally. Our solution in <code>src/agents/supervisor.py</code> dynamically alters routing based on customer emotion:</p>
+              
+              <div class="trophy-rules-list">
+                <div><span>Rule 1:</span> Legal / lawsuit threat detected → auto-escalate to <strong>CRITICAL</strong> priority.</div>
+                <div><span>Rule 2:</span> Financial dispute + ANGRY sentiment or churn risk → bump priority to <strong>HIGH</strong>.</div>
+                <div><span>Rule 3:</span> Non-billing extreme distress (ANGRY + churn risk) → escalate to <strong>CRITICAL</strong>.</div>
+                <div><span>Rule 4:</span> Outage keywords (503 / crash / downtime) → boost priority to <strong>HIGH</strong>.</div>
+              </div>
+
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.8rem;">
+                Verified with 100% test coverage in <code>tests/test_graph_flow.py</code>:<br>
+                <code>pytest tests/test_graph_flow.py::test_supervisor_sentiment_priority_challenge_rule -v</code>
+              </p>
+
+              <div style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent-cyan);">
+                Next Project Preview: <strong>Project 3 — Autonomous Coding Agent</strong> (Sandbox Execution, Stack Trace Self-Correction & Feedback Loops)
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 3. Presentation Footer -->
+    <footer class="pres-footer" role="contentinfo">
+      <div class="footer-left">
+        <button id="prevBtn" class="nav-btn" aria-label="Previous Slide (Press Left Arrow)">
+          <span aria-hidden="true">←</span> Prev
+        </button>
+        <button id="nextBtn" class="nav-btn primary" aria-label="Next Slide (Press Right Arrow or Space)">
+          Next <span aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <div class="footer-center" id="progressDots" role="tablist" aria-label="Slide Navigation Dots">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="footer-right">
+        <span>Use <kbd>←</kbd> <kbd>→</kbd> <kbd>Space</kbd> • <kbd>P</kbd> Pop-out • <kbd>S</kbd> Notes • <kbd>O</kbd> Grid</span>
+      </div>
+    </footer>
+
+    <!-- 4. Draggable Speaker Notes Drawer -->
+    <aside id="notesDrawer" class="notes-drawer" role="complementary" aria-label="Speaker Notes Panel">
+      <div class="notes-header" id="notesDragHandle">
+        <h3><span aria-hidden="true">📝</span> Speaker Teleprompter</h3>
+        <div class="notes-actions">
+          <button id="resetNotesPosBtn" class="notes-icon-btn" title="Reset Notes Position" aria-label="Reset Notes Position">↺</button>
+          <button id="popoutNotesInnerBtn" class="notes-icon-btn" title="Pop-out to New Window (P)" aria-label="Pop out Notes Window">↗</button>
+          <button id="closeNotesBtn" class="notes-icon-btn" title="Close Notes (S)" aria-label="Close Notes Panel">✕</button>
+        </div>
+      </div>
+      <div class="notes-body" id="notesBody">
+        <!-- Injected dynamically based on current slide -->
+      </div>
+    </aside>
+
+    <!-- 5. Slide Overview Modal ('O' key) -->
+    <div id="overviewModal" class="overview-modal" role="dialog" aria-modal="true" aria-label="Slide Overview Grid">
+      <div class="overview-header">
+        <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 800;">Slide Overview</h2>
+        <button id="closeOverviewBtn" class="tool-btn" aria-label="Close Overview Grid">Close (Esc)</button>
+      </div>
+      <div class="overview-grid" id="overviewGrid">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+
+    <!-- 6. Scripts -->
+    <script src="script.js"></script>
+  </body>
+</html>
