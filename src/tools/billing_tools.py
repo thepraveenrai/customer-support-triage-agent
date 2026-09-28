@@ -6,7 +6,7 @@ to query databases, verify customer records, and perform actions safely.
 
 from typing import Any, Dict, List, Optional
 from langchain_core.tools import tool
-from src.mock_data import CUSTOMERS_DB, CUSTOMER_BY_EMAIL, INVOICES_DB
+from src.crm_store import CUSTOMERS_DB, CUSTOMER_BY_EMAIL, INVOICES_DB
 
 
 @tool

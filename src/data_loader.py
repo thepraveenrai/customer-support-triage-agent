@@ -199,3 +199,222 @@ def get_dataset_analytics(csv_path: str = DEFAULT_CSV_PATH) -> Dict[str, Any]:
         "total_disputed_amount_sum": round(sum(disputed_amounts), 2),
         "average_disputed_amount": round(avg_dispute, 2),
     }
+
+
+# ==============================================================================
+# Customer Dataset Loader & Analytics
+# ==============================================================================
+
+DEFAULT_CUSTOMERS_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data",
+    "customers.csv",
+)
+
+DEFAULT_INVOICES_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data",
+    "invoices.csv",
+)
+
+
+def load_customers_csv(
+    csv_path: str = DEFAULT_CUSTOMERS_CSV,
+    limit: Optional[int] = None,
+    offset: int = 0,
+    tier: Optional[str] = None,
+    industry: Optional[str] = None,
+    status: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Loads and filters customers from the enterprise CRM CSV dataset.
+
+    Args:
+        csv_path: Path to the customers CSV.
+        limit: Max number of customers to return.
+        offset: Offset for pagination.
+        tier: Filter by 'free', 'pro', or 'enterprise'.
+        industry: Filter by industry.
+        status: Filter by 'active', 'churn_risk', etc.
+        country: Filter by 2-letter country code (e.g. 'US', 'DE').
+        search: Substring search across customer_id, name, company, email.
+
+    Returns:
+        List of typed customer dictionaries.
+    """
+    if not os.path.exists(csv_path):
+        return []
+
+    results = []
+    search_lower = search.lower().strip() if search else None
+    matched_idx = 0
+
+    with open(csv_path, mode="r", encoding="utf-8", errors="replace") as f:
+        reader = csv.DictReader(f)
+        for raw in reader:
+            cid = raw.get("customer_id", "").strip().upper()
+            c_tier = raw.get("tier", "free").lower()
+            c_status = raw.get("account_status", "active").lower()
+            c_ind = raw.get("industry", "")
+            c_country = raw.get("billing_country", "").upper()
+
+            if tier and c_tier != tier.lower():
+                continue
+            if status and c_status != status.lower():
+                continue
+            if industry and industry.lower() not in c_ind.lower():
+                continue
+            if country and c_country != country.upper():
+                continue
+
+            if search_lower:
+                corpus = f"{cid} {raw.get('name', '')} {raw.get('company', '')} {raw.get('email', '')}".lower()
+                if search_lower not in corpus:
+                    continue
+
+            if matched_idx < offset:
+                matched_idx += 1
+                continue
+
+            try:
+                monthly = float(raw.get("monthly_spend", 0.0))
+            except ValueError:
+                monthly = 0.0
+            try:
+                acv = float(raw.get("annual_contract_value", 0.0))
+            except ValueError:
+                acv = 0.0
+            try:
+                credit = float(raw.get("credit_balance", 0.0))
+            except ValueError:
+                credit = 0.0
+
+            results.append({
+                "customer_id": cid,
+                "name": raw.get("name", ""),
+                "email": raw.get("email", ""),
+                "company": raw.get("company", ""),
+                "tier": c_tier,
+                "industry": c_ind,
+                "monthly_spend": monthly,
+                "annual_contract_value": acv,
+                "account_manager": raw.get("account_manager", "Unassigned"),
+                "sla_level": raw.get("sla_level", "Standard"),
+                "joined_date": raw.get("joined_date", ""),
+                "renewal_date": raw.get("renewal_date", ""),
+                "status": c_status,
+                "billing_country": c_country,
+                "billing_city": raw.get("billing_city", ""),
+                "phone": raw.get("phone", ""),
+                "payment_method": raw.get("payment_method", ""),
+                "credit_balance": credit,
+                "active_licenses": int(raw.get("active_licenses", 1)),
+            })
+
+            matched_idx += 1
+            if limit and len(results) >= limit:
+                break
+
+    return results
+
+
+def get_customer_by_id(identifier: str, csv_path: str = DEFAULT_CUSTOMERS_CSV) -> Optional[Dict[str, Any]]:
+    """Fetches a specific customer by ID (e.g. 'CUST-141') or email address."""
+    clean_id = identifier.strip().lower()
+    customers = load_customers_csv(csv_path=csv_path)
+    for c in customers:
+        if c["customer_id"].lower() == clean_id or c["email"].lower() == clean_id:
+            return c
+    return None
+
+
+def load_invoices_csv(
+    customer_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: Optional[int] = None,
+    csv_path: str = DEFAULT_INVOICES_CSV,
+) -> List[Dict[str, Any]]:
+    """Loads invoices from the enterprise invoices dataset."""
+    if not os.path.exists(csv_path):
+        return []
+
+    results = []
+    clean_cid = customer_id.strip().upper() if customer_id else None
+
+    with open(csv_path, mode="r", encoding="utf-8", errors="replace") as f:
+        reader = csv.DictReader(f)
+        for raw in reader:
+            cid = raw.get("customer_id", "").strip().upper()
+            inv_status = raw.get("status", "paid").lower()
+
+            if clean_cid and cid != clean_cid:
+                continue
+            if status and inv_status != status.lower():
+                continue
+
+            try:
+                amt = float(raw.get("amount", 0.0))
+            except ValueError:
+                amt = 0.0
+
+            results.append({
+                "invoice_id": raw.get("invoice_id", ""),
+                "customer_id": cid,
+                "customer_name": raw.get("customer_name", ""),
+                "customer_company": raw.get("customer_company", ""),
+                "amount": amt,
+                "currency": raw.get("currency", "USD"),
+                "date": raw.get("date", ""),
+                "due_date": raw.get("due_date", ""),
+                "status": inv_status,
+                "description": raw.get("description", ""),
+                "payment_method": raw.get("payment_method", ""),
+            })
+
+            if limit and len(results) >= limit:
+                break
+
+    return results
+
+
+@lru_cache(maxsize=4)
+def get_customer_dataset_analytics(csv_path: str = DEFAULT_CUSTOMERS_CSV) -> Dict[str, Any]:
+    """Computes statistical metrics for the customer database."""
+    customers = load_customers_csv(csv_path=csv_path)
+    total = len(customers)
+
+    tier_counts = {}
+    status_counts = {}
+    industry_counts = {}
+    country_counts = {}
+    total_mrr = 0.0
+    total_acv = 0.0
+
+    for c in customers:
+        t = c["tier"]
+        tier_counts[t] = tier_counts.get(t, 0) + 1
+
+        st = c["status"]
+        status_counts[st] = status_counts.get(st, 0) + 1
+
+        ind = c["industry"]
+        industry_counts[ind] = industry_counts.get(ind, 0) + 1
+
+        ctry = c["billing_country"]
+        country_counts[ctry] = country_counts.get(ctry, 0) + 1
+
+        total_mrr += c["monthly_spend"]
+        total_acv += c["annual_contract_value"]
+
+    return {
+        "total_customers": total,
+        "tier_distribution": tier_counts,
+        "status_distribution": status_counts,
+        "industry_distribution": industry_counts,
+        "country_distribution": country_counts,
+        "total_monthly_recurring_revenue": round(total_mrr, 2),
+        "total_annual_contract_value": round(total_acv, 2),
+        "average_monthly_spend": round((total_mrr / total) if total else 0.0, 2),
+    }
+

@@ -1,6 +1,6 @@
 # Architecture Deep Dive: Customer Support Triage System
 
-This document provides a comprehensive technical breakdown of the multi-agent architecture implemented in **Project 2: Customer Support Triage Agent**. Use this guide to understand the internal mechanics of LangGraph state transitions, checkpointing, and agent coordination.
+This document provides a comprehensive technical breakdown of the multi-agent architecture implemented in **Project 2: Customer Support Triage Agent**. Use this guide to understand the internal mechanics of LangGraph state transitions, checkpointing, and enterprise CRM data integration.
 
 ---
 
@@ -28,14 +28,14 @@ When building agentic applications, developers typically start with one of two f
                           │
                           ▼
                 ┌──────────────────┐
-                │ Supervisor Node  │
+                │ Supervisor Node  │◄───────[Customer 360 & SLA Profile]
                 └─────────┬────────┘
         ┌─────────────────┼─────────────────┐
         ▼                 ▼                 ▼
 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
 │Billing Agent │   │  Tech Agent  │   │Escalation Ag.│
 └───────┬──────┘   └──────┬───────┘   └──────┬───────┘
-        │                 │                  │
+        │ (Invoices)      │ (Telemetry)      │ (Exec Dossier)
         └─────────────────┼──────────────────┘
                           ▼
              [Human Gate / Checkpoint]
@@ -50,7 +50,41 @@ When building agentic applications, developers typically start with one of two f
 
 ---
 
-## 2. Shared State Architecture (`src/state.py`)
+## 2. Enterprise Customer CRM & Invoicing Integration (`src/crm_store.py`)
+
+A critical weakness in naive support agent demos is the absence of **actual customer master data**. A ticket is only a transient inquiry—without customer identity, SLA contracts, and billing ledger history, an agent cannot make sound business decisions.
+
+### Customer 360 Resolution Architecture
+When a ticket is ingested, the system binds it to a verified customer record:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as Customer (e.g. CUST-141)
+    participant Supervisor as Supervisor Agent
+    participant CRMStore as CRM & Invoicing Store (crm_store.py)
+    participant Specialist as Specialist Agent (Billing / Tech)
+    participant LLM as LLM Decision Engine
+
+    Customer->>Supervisor: Ingest Ticket ("Billing dispute on last invoice")
+    Supervisor->>CRMStore: lookup_customer_profile("CUST-141")
+    CRMStore-->>Supervisor: Returns MRR ($3,200), Tier (Enterprise Platinum), AE (Sarah Jenkins)
+    Supervisor->>LLM: Evaluate SLA urgency & emotional intensity
+    Note over Supervisor,LLM: Platinum account + Negative sentiment -> URGENT Priority
+    Supervisor->>Specialist: Route state with Customer 360 context
+    Specialist->>CRMStore: get_invoice_history("CUST-141")
+    CRMStore-->>Specialist: Returns past invoices (amounts, dates, items)
+    Specialist->>Customer: Delivers verified resolution grounded in actual customer contract
+```
+
+### Dataset Scale
+- **Master Customer Directory:** 602 Enterprise Accounts in [`data/customers.csv`](file:///data/customers.csv) representing **$298,830.00 MRR** (~**$3.58M ACV**).
+- **Invoicing Ledger:** 2,207 Historical Invoices in [`data/invoices.csv`](file:///data/invoices.csv) with itemized descriptions and paid/disputed states.
+- **Support Tickets:** 1,000 Authentic Production Tickets in [`data/customer_support_tickets_1000.csv`](file:///data/customer_support_tickets_1000.csv).
+
+---
+
+## 3. Shared State Architecture (`src/state.py`)
 
 LangGraph operates on a **Single Source of Truth** called `State`.
 
@@ -59,7 +93,7 @@ class TriageState(TypedDict):
     # 1. Message Channel with Reducer
     messages: Annotated[List[BaseMessage], add_messages]
 
-    # 2. Metadata & Triage
+    # 2. Metadata & Customer CRM Context
     ticket_id: str
     customer_id: str
     customer_tier: str
@@ -86,7 +120,7 @@ By default, LangGraph replaces dictionary keys with the newly returned value. Ho
 
 ---
 
-## 3. Human-in-the-Loop (HITL) Mechanics
+## 4. Human-in-the-Loop (HITL) Mechanics
 
 In traditional programming, waiting for a human requires keeping a thread sleeping or setting up a database polling worker.
 In LangGraph, **state persistence and interruption are native first-class primitives**:
@@ -118,12 +152,13 @@ graph = builder.compile(
 
 ---
 
-## 4. Production Hardening Checklist (Course Lecture 8 Alignment)
+## 5. Production Hardening Checklist (Course Lecture 8 Alignment)
 
 When moving this project from local testing to enterprise production:
 
 | Concern | Development (Current) | Production Setup |
 | :--- | :--- | :--- |
+| **CRM Data Layer** | In-memory CSV cache (`src/crm_store.py`) | Salesforce / HubSpot / PostgreSQL CRM integration. |
 | **Checkpointer** | `MemorySaver` (in-memory) | `PostgresSaver` or `SqliteSaver` for durable persistence across server restarts. |
 | **Observability** | Console logs | Enable `LANGCHAIN_TRACING_V2=true` for full LangSmith tracing. |
 | **Concurrency** | Single-threaded | Distributed workers keyed by `thread_id`. |

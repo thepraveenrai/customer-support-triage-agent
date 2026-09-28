@@ -15,7 +15,15 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 
 from src.config import settings
-from src.data_loader import get_dataset_analytics, get_ticket_by_id, load_tickets_csv
+from src.data_loader import (
+    get_customer_by_id,
+    get_customer_dataset_analytics,
+    get_dataset_analytics,
+    get_ticket_by_id,
+    load_customers_csv,
+    load_invoices_csv,
+    load_tickets_csv,
+)
 from src.graph import create_support_graph, get_mermaid_diagram
 from src.state import PriorityLevel, SentimentLevel, TicketCategory, TriageState
 
@@ -412,3 +420,142 @@ def resume_ticket(thread_id: str, payload: HumanReviewRequest):
 def get_graph_diagram():
     """Returns the Mermaid graph representation of the triage architecture."""
     return {"mermaid": get_mermaid_diagram()}
+
+
+# ==============================================================================
+# Customer CRM & Account Endpoints
+# ==============================================================================
+
+class CustomerTicketRequest(BaseModel):
+    message: str = Field(..., description="Customer message, question, or refund request")
+    subject: Optional[str] = Field(None, description="Optional subject line")
+    channel: str = Field("web_portal", description="Channel: 'email', 'chat', 'web_portal'")
+
+
+@app.get("/api/customers", tags=["Customers CRM"])
+def get_customers(
+    limit: int = 25,
+    offset: int = 0,
+    tier: Optional[str] = None,
+    industry: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+):
+    """Browse enterprise customers with filtering and pagination."""
+    customers = load_customers_csv(
+        limit=limit,
+        offset=offset,
+        tier=tier,
+        industry=industry,
+        status=status_filter,
+        country=country,
+        search=search,
+    )
+    analytics = get_customer_dataset_analytics()
+    return {
+        "total_matched": len(customers),
+        "limit": limit,
+        "offset": offset,
+        "customers": customers,
+        "crm_summary": {
+            "total_customers": analytics.get("total_customers"),
+            "total_mrr": analytics.get("total_monthly_recurring_revenue"),
+            "total_acv": analytics.get("total_annual_contract_value"),
+            "tier_distribution": analytics.get("tier_distribution"),
+        },
+    }
+
+
+@app.get("/api/customers/{customer_id}", tags=["Customers CRM"])
+def get_customer_details(customer_id: str):
+    """Retrieve full Customer 360 profile, invoices, and SLA contract."""
+    customer = get_customer_by_id(customer_id)
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Customer '{customer_id}' not found.",
+        )
+    invoices = load_invoices_csv(customer_id=customer["customer_id"])
+    recent_tickets = load_tickets_csv(search=customer["customer_id"], limit=5)
+    return {
+        "customer": customer,
+        "invoices": invoices,
+        "total_invoices": len(invoices),
+        "recent_tickets": recent_tickets,
+    }
+
+
+@app.post("/api/customers/{customer_id}/ticket", response_model=TicketResponse, tags=["Customers CRM"])
+def submit_ticket_for_customer(customer_id: str, payload: CustomerTicketRequest):
+    """Submit a support ticket or question as a specific enterprise customer."""
+    customer = get_customer_by_id(customer_id)
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Customer '{customer_id}' not found in CRM.",
+        )
+
+    ticket_id = f"TIK-{uuid.uuid4().hex[:4].upper()}"
+    thread_id = f"thread-{uuid.uuid4().hex[:8]}"
+    config = {"configurable": {"thread_id": thread_id}}
+
+    initial_state: TriageState = {
+        "messages": [HumanMessage(content=payload.message)],
+        "ticket_id": ticket_id,
+        "customer_id": customer["customer_id"],
+        "customer_email": customer["email"],
+        "customer_tier": customer["tier"],
+        "ticket_category": None,
+        "sentiment": None,
+        "priority": None,
+        "churn_risk": None,
+        "triage_reasoning": None,
+        "specialist_assigned": None,
+        "draft_response": None,
+        "actions_taken": [],
+        "requires_human_approval": False,
+        "approval_reason": None,
+        "human_decision": None,
+        "human_feedback": None,
+        "final_response": None,
+        "status": "open",
+    }
+
+    try:
+        final_state = support_graph.invoke(initial_state, config=config)
+        return TicketResponse(
+            thread_id=thread_id,
+            ticket_id=ticket_id,
+            status=final_state.get("status", "open"),
+            category=final_state.get("ticket_category"),
+            sentiment=final_state.get("sentiment"),
+            priority=final_state.get("priority"),
+            churn_risk=final_state.get("churn_risk"),
+            specialist_assigned=final_state.get("specialist_assigned"),
+            requires_human_approval=final_state.get("requires_human_approval", False),
+            approval_reason=final_state.get("approval_reason"),
+            draft_response=final_state.get("draft_response"),
+            final_response=final_state.get("final_response"),
+            actions_taken=final_state.get("actions_taken", []),
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Triage execution failed: {err}",
+        )
+
+
+@app.get("/api/invoices", tags=["Customers CRM"])
+def get_invoices(
+    customer_id: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    limit: int = 50,
+):
+    """Retrieve billing invoices filtered by customer or payment status."""
+    invoices = load_invoices_csv(customer_id=customer_id, status=status_filter, limit=limit)
+    return {
+        "count": len(invoices),
+        "invoices": invoices,
+    }
+

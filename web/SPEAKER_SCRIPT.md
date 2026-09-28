@@ -154,23 +154,28 @@ By the end of this lecture, your students will understand:
 
 ---
 
-## Slide 10: Interactive Live Simulation Studio (6 Production Cases)
+## Slide 10: Enterprise Dataset & Simulation Studio (1,000 Tickets & 602 Accounts)
 **[VISUAL CUE: Advance to Slide 10. Demonstrate live in the UI!]**
 
-> *"Now, let's see this entire architecture in action! Here on Slide 10, we have built a live simulation studio running the 6 production test cases from our test suite.*
+> *"Now, let's see this entire architecture in action! Here on Slide 10, we have built a full enterprise dataset studio powered by 1,000 production tickets and 602 real customer accounts.*
 >
-> *Let's start with **Ticket 101: Calm Billing Inquiry** for $49.*
-> *[CLICK: TIK-101 -> Click 'Run Simulation']*
-> *Watch the nodes light up! START -> Supervisor classifies it as Billing, Neutral, Low Priority -> Billing Specialist checks invoice INV-001 -> The refund is under $50, so it bypasses the human gate and auto-resolves instantly!*
+> *Look at the KPI ribbon at the top: 1,000 tickets across Billing, Technical, and Escalation, with over $216,000 in disputed charges and a 37.4% human checkpoint trigger rate.*
 >
-> *Now, let's test **Ticket 102: Furious Customer Demanding $250 Refund**.*
-> *[CLICK: TIK-102 -> Click 'Run Simulation']*
-> *Watch what happens! START -> Supervisor detects ANGRY sentiment and Churn Risk -> Routes to Billing Specialist -> The specialist sees $250 > $50 threshold -> Look at that: **🚨 HUMAN-IN-THE-LOOP CHECKPOINT TRIGGERED!***
-> *Execution pauses right here. The manager can click **Approve Draft**, **Edit Response**, or **Reject**.*
+> *Notice the search and filter bar on the left. You can filter by Billing, Tech, Escalation, or specifically inspect the 374 tickets that trigger Human-in-the-Loop.*
+>
+> *Let's pick a ticket, like **TIK-102: Furious Customer Demanding $250 Refund**.*
+> *[CLICK: TIK-102]*
+> *Notice our step-by-step controller in the top right: instead of rushing through, you have full control with **Next Step** and **Prev Step** buttons, or **Auto Play**!*
+>
+> *Let's click **Next Step**:*
+> *1. Step 1: START -> Ingests the ticket and resolves the verified Customer 360 profile from our CRM dataset.*
+> *2. Step 2: Supervisor detects ANGRY sentiment and Churn Risk, and routes to Billing Specialist.*
+> *3. Step 3: Billing Specialist audits past invoices, sees $250 > $50 threshold -> **🚨 HUMAN-IN-THE-LOOP CHECKPOINT TRIGGERED!***
+> *4. Step 4: The human manager can click **Approve Draft**, **Edit Response**, or **Reject** right in the UI.*
 > *[CLICK: 'Approve Draft']*
-> *The graph resumes, saves the decision, and delivers the finalized apology to the customer.*
+> *The graph resumes cleanly and delivers the final response.*
 >
-> *Feel free to test Ticket 104 as well to see the VIP lawsuit escalation in action!"*
+> *This step controller gives instructors and students complete pedagogical control to pause, discuss, and explain each agent decision at their own pace."*
 
 ---
 
@@ -184,18 +189,27 @@ By the end of this lecture, your students will understand:
 > *Notice three critical engineering decisions:*
 > 1. *First: With a single API key, you can switch between OpenAI's `gpt-4o-mini`, Anthropic's `claude-3.5-sonnet`, and NVIDIA's free `nemotron-3.5-lightning` model.*
 > 2. *Second: **Smart Model Tiering**. We route lightweight classification tasks to cheap, fast models, saving 80% on token bills.*
-> 3. *And third: **Zero-Cost Offline Fallback**. If you or your students don't have an API key right now, our system automatically runs `MockChatSupportModel`. All 12 unit tests pass 100% offline with zero spend. This makes testing effortless for students."*
+> 3. *And third: **Zero-Cost Offline Fallback**. If you or your students don't have an API key right now, our system automatically runs `MockChatSupportModel`. All 17 unit tests pass 100% offline with zero spend. This makes testing effortless for students."*
 
 ---
 
-## Slide 12: Production Deployment & CLI Runner
+## Slide 12: Production Deployment, CRM & CLI Runner
 **[VISUAL CUE: Advance to Slide 12. Point to the FastAPI endpoints and CLI commands.]**
 
 > *"How do we take this from our local terminal into enterprise production?*
 >
-> *First: **FastAPI Async REST API**. In `src/api.py`, we expose endpoints for submitting tickets (`POST /api/tickets/triage`), inspecting thread state (`GET /api/tickets/{id}/state`), and approving checkpoints (`POST /api/tickets/{id}/resume`). You get interactive Swagger UI at `http://127.0.0.1:8000/docs`.*
+> *First: **FastAPI Async REST API**. In `src/api.py`, our compiled StateGraph and Enterprise CRM are exposed as production-ready HTTP endpoints with OpenAPI / Swagger documentation:*
+> - `GET /api/customers` & `GET /api/customers/{id}`: Full Customer 360 profiles and SLA contract tiers.
+> - `POST /api/customers/{id}/ticket`: Ingest a ticket authored by a verified customer account.
+> - `GET /api/invoices`: Invoicing ledger search by customer ID and payment status.
+> - `POST /api/tickets/triage`: Direct ticket triage pipeline.
+> - `GET /api/tickets/{id}/state` & `POST /api/tickets/{id}/resume`: Human-in-the-Loop manager checkpoint review.
 >
-> *Second: **The Terminal Runner**. You can test everything locally using our rich CLI: `python run_triage.py --mode interactive` for live human approvals, or `--mode batch` to stress-test all 6 tickets.*
+> *Second: **The Terminal Runner (`run_triage.py`)**. You can explore 5 powerful modes:*
+> - `python run_triage.py --mode customers`: Browse the 602 enterprise customer accounts and MRR analytics.
+> - `python run_triage.py --mode interactive --customer CUST-141`: Load a live Customer 360 card and submit custom questions/tickets.
+> - `python run_triage.py --mode dataset`: Search and filter the 1,000 production tickets.
+> - `python run_triage.py --mode batch`: Stress-test the multi-agent routing across messy real-world tickets.
 >
 > *And third: **Durable Persistence**. For production, swap development `MemorySaver` for `PostgresSaver`. Every checkpoint is written to PostgreSQL, meaning your agents survive container restarts and server crashes with zero data loss."*
 

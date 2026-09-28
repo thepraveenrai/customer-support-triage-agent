@@ -109,3 +109,38 @@ def test_api_dataset_single_ticket():
     assert "customer_id" in ticket
     assert "message" in ticket
 
+
+def test_api_customers_list_and_profile():
+    """Verify customer CRM directory and Customer 360 profile endpoints."""
+    # Test list customers
+    res = client.get("/api/customers?limit=10")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_matched"] == 10
+    assert "crm_summary" in data
+    assert data["crm_summary"]["total_customers"] >= 600
+
+    # Test single customer 360 profile
+    res_c = client.get("/api/customers/CUST-141")
+    assert res_c.status_code == 200
+    cdata = res_c.json()
+    assert cdata["customer"]["customer_id"] == "CUST-141"
+    assert cdata["customer"]["company"] == "Horizon Retail Network"
+    assert cdata["customer"]["tier"] == "enterprise"
+    assert cdata["total_invoices"] >= 1
+
+
+def test_api_submit_ticket_for_customer():
+    """Verify submitting a ticket directly on a customer's account."""
+    payload = {
+        "message": "We are experiencing network timeouts connecting to your API. Can you investigate?",
+        "subject": "Urgent API Timeout Issue",
+    }
+    res = client.post("/api/customers/CUST-141/ticket", json=payload)
+    assert res.status_code == 200
+    tdata = res.json()
+    assert tdata["status"] in ["resolved", "pending_human_review"]
+    assert tdata["category"] in ["technical", "escalation"]
+    assert tdata["final_response"] is not None or tdata["draft_response"] is not None
+
+

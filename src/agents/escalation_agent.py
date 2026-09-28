@@ -11,7 +11,7 @@ so an Account Executive or Support Director can intervene.
 
 from typing import Any, Dict, List
 from langchain_core.messages import AIMessage, HumanMessage
-from src.mock_data import CUSTOMERS_DB
+from src.crm_store import CUSTOMERS_DB
 from src.state import TriageState
 from src.tools.billing_tools import lookup_customer_profile
 

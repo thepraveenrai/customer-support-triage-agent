@@ -27,6 +27,15 @@ from rich.table import Table
 from rich.text import Text
 
 from src.config import settings
+from src.data_loader import (
+    get_customer_by_id,
+    get_customer_dataset_analytics,
+    get_dataset_analytics,
+    get_ticket_by_id,
+    load_customers_csv,
+    load_invoices_csv,
+    load_tickets_csv,
+)
 from src.graph import create_support_graph, get_mermaid_diagram
 from src.state import TriageState
 from tests.test_tickets import SAMPLE_TICKETS
@@ -197,25 +206,105 @@ def run_batch_mode():
     console.print("\n[bold green]✅ All 6 stress-test tickets evaluated successfully![/bold green]")
 
 
-def run_interactive_mode():
-    """Allows user to enter a custom support ticket and step through execution."""
-    console.print("\n[bold green]💬 INTERACTIVE TICKET TRIAGE CONSOLE[/bold green]")
-    console.print("Type your support ticket message below to observe routing, tools, and HITL in action.\n")
+def run_customers_mode():
+    """Displays CRM analytics and a directory of enterprise customers."""
+    console.print("\n[bold cyan]👥 ENTERPRISE CUSTOMER CRM DIRECTORY[/bold cyan]")
+    analytics = get_customer_dataset_analytics()
+
+    kpi_table = Table(title="CRM Revenue & Account Overview", header_style="bold magenta")
+    kpi_table.add_column("Metric", style="cyan")
+    kpi_table.add_column("Value", style="bold green")
+
+    kpi_table.add_row("Total Enterprise Customer Accounts", str(analytics.get("total_customers", 0)))
+    kpi_table.add_row("Monthly Recurring Revenue (MRR)", f"${analytics.get('total_monthly_recurring_revenue', 0.0):,.2f}")
+    kpi_table.add_row("Annual Contract Value (ACV)", f"${analytics.get('total_annual_contract_value', 0.0):,.2f}")
+    kpi_table.add_row("Average Customer Spend / Month", f"${analytics.get('average_monthly_spend', 0.0):,.2f}")
+    kpi_table.add_row("Enterprise Accounts (Dedicated SLAs)", str(analytics.get("tier_distribution", {}).get("enterprise", 0)))
+    kpi_table.add_row("Pro Accounts (Business SLA)", str(analytics.get("tier_distribution", {}).get("pro", 0)))
+    kpi_table.add_row("Free Community Accounts", str(analytics.get("tier_distribution", {}).get("free", 0)))
+
+    console.print(kpi_table)
+
+    # Show sample of top enterprise accounts
+    ent_customers = load_customers_csv(tier="enterprise", limit=8)
+    sample_table = Table(title="\nFeatured Enterprise Customers (Available for Querying)", header_style="bold blue")
+    sample_table.add_column("Customer ID", style="bold cyan")
+    sample_table.add_column("Contact Name", style="white")
+    sample_table.add_column("Company", style="bold white")
+    sample_table.add_column("Industry", style="dim")
+    sample_table.add_column("Monthly Spend", style="green")
+    sample_table.add_column("Assigned Lead / AE", style="magenta")
+    sample_table.add_column("SLA Level", style="yellow")
+
+    for c in ent_customers:
+        sample_table.add_row(
+            c["customer_id"],
+            c["name"],
+            c["company"],
+            c["industry"],
+            f"${c['monthly_spend']:,.2f}",
+            c["account_manager"],
+            c["sla_level"].split("•")[0].strip(),
+        )
+
+    console.print(sample_table)
+    console.print("\n[dim]Tip: Query or submit a ticket as any of these customers using: [bold].venv\\Scripts\\python run_triage.py --mode interactive --customer CUST-141[/bold][/dim]\n")
+
+
+def run_interactive_mode(customer_arg: Optional[str] = None):
+    """Allows user to query customer profiles, ask questions, and step through execution."""
+    console.print("\n[bold green]💬 INTERACTIVE CUSTOMER SUPPORT & TRIAGE CONSOLE[/bold green]")
+    console.print("Interact with real customer accounts, check invoices, submit inquiries, and watch agents triage live.\n")
 
     while True:
-        customer_id = Prompt.ask("[bold cyan]Customer ID[/bold cyan] (e.g. CUST-001, CUST-002, CUST-004)", default="CUST-001")
-        customer_tier = Prompt.ask("[bold cyan]Customer Tier[/bold cyan] (free, pro, enterprise)", default="pro")
-        message = Prompt.ask("[bold cyan]Support Ticket Message[/bold cyan]")
+        target_id = customer_arg
+        if not target_id:
+            console.print("[dim]Quick examples: [cyan]CUST-141[/cyan] (Enterprise, $4,800/mo), [cyan]CUST-002[/cyan] (Enterprise VIP, $499/mo), [cyan]CUST-004[/cyan] (Pro, $250 refund dispute), [cyan]CUST-737[/cyan] (Free)[/dim]")
+            target_id = Prompt.ask("[bold cyan]Enter Customer ID, Name, or Company[/bold cyan]", default="CUST-141")
 
+        customer = get_customer_by_id(target_id)
+        if not customer:
+            # Try searching substring
+            matches = load_customers_csv(search=target_id, limit=1)
+            customer = matches[0] if matches else None
+
+        if customer:
+            invoices = load_invoices_csv(customer_id=customer["customer_id"])
+            recent_inv = invoices[0]["invoice_id"] if invoices else "None"
+            inv_total_str = f"{len(invoices)} on file (Latest: {recent_inv}, ${invoices[0]['amount']:.2f})" if invoices else "0 recorded"
+
+            card_text = (
+                f"[bold white]Contact Name:[/bold white]     {customer['name']} ({customer['email']})\n"
+                f"[bold white]Company & Industry:[/bold white] {customer['company']} • {customer['industry']}\n"
+                f"[bold white]Account Tier:[/bold white]       [bold cyan]{customer['tier'].upper()}[/bold cyan] (${customer['monthly_spend']:,.2f}/mo • ACV: ${customer['annual_contract_value']:,.2f})\n"
+                f"[bold white]SLA Agreement:[/bold white]      [yellow]{customer['sla_level']}[/yellow]\n"
+                f"[bold white]Account Executive:[/bold white]  {customer['account_manager']}\n"
+                f"[bold white]Payment Method:[/bold white]     {customer['payment_method']}\n"
+                f"[bold white]Billing Invoices:[/bold white]   {inv_total_str}"
+            )
+            console.print(Panel(card_text, title=f"👤 Verified Enterprise Customer: {customer['customer_id']}", border_style="cyan"))
+
+            customer_id = customer["customer_id"]
+            customer_email = customer["email"]
+            customer_tier = customer["tier"]
+            customer_name = customer["name"]
+        else:
+            console.print(f"[yellow]Note: '{target_id}' not found in CRM. Proceeding with custom guest account.[/yellow]")
+            customer_id = target_id.upper()
+            customer_name = "Guest User"
+            customer_email = f"{customer_id.lower()}@customer.com"
+            customer_tier = Prompt.ask("[bold cyan]Customer Tier[/bold cyan] (free, pro, enterprise)", default="pro")
+
+        message = Prompt.ask(f"\n[bold green]Ask a question or submit a ticket as {customer_name}[/bold green]")
         if not message.strip():
             console.print("[red]Ticket message cannot be empty![/red]")
             continue
 
         ticket = {
             "id": f"TIK-{uuid.uuid4().hex[:4].upper()}",
-            "name": "Live Interactive Ticket",
+            "name": f"Inquiry from {customer_name}",
             "customer_id": customer_id,
-            "customer_email": f"{customer_id.lower()}@customer.com",
+            "customer_email": customer_email,
             "customer_tier": customer_tier,
             "message": message,
         }
@@ -224,15 +313,17 @@ def run_interactive_mode():
 
         console.print(Panel(
             f"[bold green]Resolution Status:[/bold green] {final_state.get('status', '').upper()}\n"
-            f"[bold green]Specialist:[/bold green] {final_state.get('specialist_assigned')}\n"
+            f"[bold green]Specialist Assigned:[/bold green] {final_state.get('specialist_assigned')}\n"
             f"[bold green]Tools Invoked:[/bold green] {', '.join(final_state.get('actions_taken', []))}\n\n"
-            f"[bold white]Final Response Sent to Customer:[/bold white]\n"
+            f"[bold white]Final Response Sent to {customer_name}:[/bold white]\n"
             f"{final_state.get('final_response')}",
             title="📬 Final Delivered Customer Resolution",
             border_style="green",
         ))
 
-        again = Prompt.ask("\nSubmit another ticket?", choices=["y", "n"], default="y")
+        # Reset customer_arg so next loop prompts user
+        customer_arg = None
+        again = Prompt.ask("\nQuery another customer or submit another ticket?", choices=["y", "n"], default="y")
         if again.lower() != "y":
             console.print("\n[cyan]Goodbye! Keep building multi-agent systems with LangGraph.[/cyan]")
             break
@@ -397,9 +488,15 @@ def main():
     parser = argparse.ArgumentParser(description="Customer Support Triage Multi-Agent System CLI")
     parser.add_argument(
         "--mode",
-        choices=["batch", "interactive", "diagram", "dataset", "stats"],
+        choices=["batch", "interactive", "diagram", "dataset", "stats", "customers"],
         default="batch",
-        help="Run mode: 'batch' (stress-test 6 tickets), 'dataset' (run from 1000 CSV), 'stats' (dataset analytics), 'interactive' (live tickets), 'diagram' (view graph flow)",
+        help="Run mode: 'batch' (stress-test 6 tickets), 'dataset' (run from 1000 CSV), 'stats' (dataset analytics), 'customers' (CRM customer database), 'interactive' (live customer query & ticket submission), 'diagram' (view graph flow)",
+    )
+    parser.add_argument(
+        "--customer",
+        type=str,
+        default=None,
+        help="Customer ID or name/email to interact with (e.g. 'CUST-141', 'CUST-002', 'CUST-004')",
     )
     parser.add_argument(
         "--limit",
@@ -426,7 +523,9 @@ def main():
     if args.mode == "batch":
         run_batch_mode()
     elif args.mode == "interactive":
-        run_interactive_mode()
+        run_interactive_mode(customer_arg=args.customer)
+    elif args.mode == "customers":
+        run_customers_mode()
     elif args.mode == "diagram":
         run_diagram_mode()
     elif args.mode == "stats":
@@ -437,4 +536,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

@@ -16,7 +16,7 @@ cd "c:\Users\prave\OneDrive\Desktop\Personal\Udemy Course\LangGraph Multi-Agent 
 You can run any command directly through the project's virtual environment python (`.venv\Scripts\python`). This never fails with `ModuleNotFoundError` and bypasses PowerShell script execution policy restrictions:
 
 ```powershell
-.venv\Scripts\python run_triage.py --mode interactive
+.venv\Scripts\python run_triage.py --mode customers
 ```
 
 ---
@@ -47,41 +47,66 @@ You can run any command directly through the project's virtual environment pytho
 
 ---
 
-## 2. Test Execution Commands (Start to End)
+## 2. Test Execution Commands (Step by Step)
 
-### Step 1: Run the Automated Pytest Suite
-Verifies all 12 test cases across the API, agent routing rules, tools, and human-in-the-loop flows:
+### Step 1: Run the Automated Pytest Suite (17 Tests)
+Verifies all 17 test cases across the API, agent routing rules, tools, human-in-the-loop checkpoints, and customer CRM operations:
 
 ```powershell
 .venv\Scripts\pytest -v
 ```
 *(or `pytest -v` if environment is activated)*
 
-**Expected output:** `12 passed`
+**Expected output:** `17 passed`
 
 ---
 
-### Step 2: View the Architecture & Flow Diagram
-Prints the LangGraph StateGraph topology, Mermaid flowchart, and routing ASCII art:
+### Step 2: Explore the Customer CRM Directory & MRR Analytics
+Inspect the 602 enterprise customer accounts, MRR metrics ($298K/mo), and SLA tiers:
 
 ```powershell
-.venv\Scripts\python run_triage.py --mode diagram
+.venv\Scripts\python run_triage.py --mode customers
 ```
-*(or `python run_triage.py --mode diagram` if environment is activated)*
+*(or `python run_triage.py --mode customers` if environment is activated)*
 
 ---
 
-### Step 3: Run the Batch Stress-Test Suite (Recommended for Demo)
-Executes all 6 real-world messy support ticket scenarios, demonstrating dynamic routing, tool invocations, and Human-in-the-Loop pauses:
+### Step 3: Submit Questions & Tickets as Any Verified Customer
+Select any customer ID (e.g. `CUST-141`, `CUST-002`, `CUST-737`), view their live Customer 360 profile card, and submit custom questions/tickets grounded in their actual contract:
+
+```powershell
+.venv\Scripts\python run_triage.py --mode interactive --customer CUST-141
+```
+
+#### Sample Prompts to Try as `CUST-141`:
+1. **Billing Dispute**:
+   `"We were billed $250 on our last invoice without authorization. Please issue a refund immediately."`
+   *(Triggers the Human-in-the-Loop checkpoint because $250 exceeds the $50 threshold!)*
+2. **Infrastructure Emergency**:
+   `"Our production data pipeline is throwing 503 errors and SLA guarantees are breached. What is the status of INC-8821?"`
+   *(Technical specialist inspects live telemetry and provides incident status!)*
+
+---
+
+### Step 4: Explore the 1,000 Production Tickets Dataset
+Filter and inspect the 1,000 authentic production support tickets directly from the terminal:
+
+```powershell
+.venv\Scripts\python run_triage.py --mode dataset
+```
+
+---
+
+### Step 5: Run the Batch Stress-Test Suite
+Executes the graph across messy real-world tickets, showing routing, tool calls, and HITL pauses:
 
 ```powershell
 .venv\Scripts\python run_triage.py --mode batch
 ```
-*(or `python run_triage.py --mode batch` if environment is activated)*
 
 #### Test Scenarios Covered:
 | Ticket ID | Scenario | Department | Sentiment | Priority | Human Review? | Outcome |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **TIK-101** | Routine Billing Query | Billing | NEUTRAL | LOW | Auto-Resolved | Invoice confirmed, refund not needed |
 | **TIK-102** | Furious $250 Refund Demand | Billing | ANGRY | HIGH | **PAUSED (HITL)** | Amount > $50 & anger triggers manager sign-off |
 | **TIK-103** | Cryptic 503 Stack Trace | Technical | FRUSTRATED | HIGH | Auto-Resolved | Queries telemetry, references active incident INC-8821 |
@@ -91,47 +116,44 @@ Executes all 6 real-world messy support ticket scenarios, demonstrating dynamic 
 
 ---
 
-### Step 4: Run the Interactive Support Console
-Allows you to enter live tickets interactively, observe agent decisions, and review/approve drafts at HITL checkpoints:
+### Step 6: View the Architecture & Flow Diagram
+Prints the LangGraph StateGraph topology, Mermaid flowchart, and routing ASCII art:
 
 ```powershell
-.venv\Scripts\python run_triage.py --mode interactive
+.venv\Scripts\python run_triage.py --mode diagram
 ```
-*(or `python run_triage.py --mode interactive` if environment is activated)*
-
-#### Sample Prompts to Try:
-1. **Auto-Resolve Flow (Billing)**:
-   - **Customer ID**: `CUST-001`
-   - **Customer Tier**: `pro`
-   - **Message**: `"Hi support team, could you please confirm if invoice INV-2024-001 for $49 went through?"`
-
-2. **Human-in-the-Loop Gate (High Refund & Anger)**:
-   - **Customer ID**: `CUST-004`
-   - **Customer Tier**: `pro`
-   - **Message**: `"I was charged $250 on invoice INV-2024-099 without authorization! I demand an immediate refund or I will report fraud to my bank!"`
-   - *Action*: When prompted at the red review panel, choose `[1] Approve`, `[2] Edit`, or `[3] Reject`.
-
-3. **VIP Escalation Flow**:
-   - **Customer ID**: `CUST-002`
-   - **Customer Tier**: `enterprise`
-   - **Message**: `"This is CTO Bob Miller. Your system outage breached our enterprise SLA. I need an immediate call with Sarah or our legal team will commence litigation."`
 
 ---
 
-### Step 5: Run the FastAPI REST Server
+### Step 7: Run the FastAPI REST Server
 Launch the production API server:
 
 ```powershell
 .venv\Scripts\uvicorn src.api:app --reload --port 8000
 ```
-*(or `uvicorn src.api:app --reload --port 8000` if environment is activated)*
 
 - **Interactive API Docs (Swagger UI)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **Alternative Docs (ReDoc)**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
 #### Testing the API via PowerShell:
 
-**1. Ingest a Ticket (POST /api/tickets/triage):**
+**1. Inspect Customer 360 Profile (GET /api/customers/{id}):**
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/customers/CUST-141" -Method Get | ConvertTo-Json -Depth 4
+```
+
+**2. Submit a Ticket for that Customer (POST /api/customers/{id}/ticket):**
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/customers/CUST-141/ticket" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{
+    "subject": "Production API Latency Spike",
+    "body": "Our integration endpoint is seeing 12s response times and 503 errors."
+  }' | ConvertTo-Json -Depth 4
+```
+
+**3. Ingest a Raw Ticket (POST /api/tickets/triage):**
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/tickets/triage" `
   -Method Post `
@@ -143,13 +165,13 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/tickets/triage" `
   }' | ConvertTo-Json -Depth 4
 ```
 
-**2. Check Thread State (GET /api/tickets/{thread_id}/state):**
-Replace `<THREAD_ID>` with the `thread_id` returned from step 1:
+**4. Check Paused Thread State (GET /api/tickets/{thread_id}/state):**
+Replace `<THREAD_ID>` with the `thread_id` returned from step 3:
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/tickets/<THREAD_ID>/state" -Method Get | ConvertTo-Json -Depth 4
 ```
 
-**3. Resume Paused Ticket with Human Review (POST /api/tickets/{thread_id}/resume):**
+**5. Resume Paused Ticket with Human Review (POST /api/tickets/{thread_id}/resume):**
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/tickets/<THREAD_ID>/resume" `
   -Method Post `
@@ -162,38 +184,22 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/tickets/<THREAD_ID>/resume" `
 
 ---
 
-## 3. LLM Configuration Options
-
-Settings are managed in [`.env`](file:///.env):
-
-- **OpenRouter (Active & Configured)**:
-  ```env
-  LLM_PROVIDER=openrouter
-  OPENROUTER_API_KEY=sk-or-v1-your-key-here
-  MODEL_NAME=nvidia/nemotron-3.5-lightning:free
-  MODEL_TEMPERATURE=0.0
-  ```
-  *(Supported models: `nvidia/nemotron-3.5-lightning:free`, `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.3-70b-instruct`)*
-
-- **Mock Mode (Zero-Cost Offline Fallback)**:
-  If `OPENROUTER_API_KEY` and `OPENAI_API_KEY` are empty or removed, the system automatically runs the built-in `MockChatSupportModel` offline.
-
-- **Direct OpenAI**:
-  ```env
-  LLM_PROVIDER=openai
-  OPENAI_API_KEY=sk-your-openai-key-here
-  MODEL_NAME=gpt-4o-mini
-  ```
+### Step 8: Open the Web Presentation & Interactive Studio
+Simply open [`web/index.html`](file:///web/index.html) in your browser:
+- Slide 10 features the **Interactive 1,000-Ticket Studio** with step controls (`Prev`, `Next`, `Auto Play`).
+- Press `S` for Speaker Notes drawer.
+- Press `P` for Pop-Out Teleprompter window for your secondary monitor.
 
 ---
 
-## 4. Quick Reference Cheatsheet
+## 3. Quick Reference Cheatsheet
 
 | Task | Direct Command (Recommended) | Activated Command |
 | :--- | :--- | :--- |
-| **Run All Unit Tests** | `.venv\Scripts\pytest -v` | `pytest -v` |
-| **Run Specific Test File** | `.venv\Scripts\pytest tests/test_graph_flow.py -v` | `pytest tests/test_graph_flow.py -v` |
+| **Run All 17 Unit Tests** | `.venv\Scripts\pytest -v` | `pytest -v` |
+| **View Customer Directory** | `.venv\Scripts\python run_triage.py --mode customers` | `python run_triage.py --mode customers` |
+| **Submit Ticket as Customer** | `.venv\Scripts\python run_triage.py --mode interactive --customer CUST-141` | `python run_triage.py --mode interactive --customer CUST-141` |
+| **Explore 1,000 Tickets** | `.venv\Scripts\python run_triage.py --mode dataset` | `python run_triage.py --mode dataset` |
 | **Run Batch Scenarios** | `.venv\Scripts\python run_triage.py --mode batch` | `python run_triage.py --mode batch` |
-| **Run Interactive Console** | `.venv\Scripts\python run_triage.py --mode interactive` | `python run_triage.py --mode interactive` |
-| **Inspect Mermaid Diagram** | `.venv\Scripts\python run_triage.py --mode diagram` | `python run_triage.py --mode diagram` |
+| **Inspect Architecture Diagram** | `.venv\Scripts\python run_triage.py --mode diagram` | `python run_triage.py --mode diagram` |
 | **Launch FastAPI Server** | `.venv\Scripts\uvicorn src.api:app --reload --port 8000` | `uvicorn src.api:app --reload --port 8000` |

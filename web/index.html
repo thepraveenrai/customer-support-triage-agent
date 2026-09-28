@@ -703,9 +703,9 @@
               <p>In <code>src/api.py</code>, our compiled StateGraph is exposed as production-ready HTTP endpoints with OpenAPI / Swagger documentation.</p>
               <ul class="deploy-checklist">
                 <li>✓ <code>POST /api/tickets/triage</code> — Submit new ticket</li>
-                <li>✓ <code>GET /api/tickets/{id}/state</code> — Inspect thread state</li>
+                <li>✓ <code>GET /api/customers & GET /api/customers/{id}</code> — CRM 360 & SLAs</li>
+                <li>✓ <code>POST /api/customers/{id}/ticket</code> — Verified customer ticket</li>
                 <li>✓ <code>POST /api/tickets/{id}/resume</code> — Resume HITL checkpoint</li>
-                <li>✓ <code>GET /health</code> — Liveness probe for Kubernetes</li>
               </ul>
             </div>
 
@@ -714,10 +714,10 @@
               <h3>run_triage.py Runner</h3>
               <p>A multi-mode terminal runner built with Python <code>rich</code> for instant live testing and stress-testing.</p>
               <ul class="deploy-checklist">
-                <li>✓ <code>--mode interactive</code> — Interactive prompt with live HITL</li>
-                <li>✓ <code>--mode batch</code> — Stress-tests all 6 messy tickets</li>
-                <li>✓ <code>--mode diagram</code> — Prints ASCII & Mermaid topology</li>
-                <li>✓ Python virtual environment: <code>.venv\Scripts\python</code></li>
+                <li>✓ <code>--mode customers</code> — 602 Enterprise accounts ($298K MRR)</li>
+                <li>✓ <code>--customer &lt;ID&gt;</code> — Live Customer 360 card & ticket entry</li>
+                <li>✓ <code>--mode dataset</code> — Search and filter 1,000 production tickets</li>
+                <li>✓ <code>--mode batch & --mode interactive</code> — Live HITL checkpoints</li>
               </ul>
             </div>
 
@@ -727,7 +727,7 @@
               <p>Replacing development <code>MemorySaver</code> with <code>PostgresSaver</code> for durable multi-server persistence across container restarts.</p>
               <ul class="deploy-checklist">
                 <li>✓ Full LangSmith execution tracing</li>
-                <li>✓ Token bucket rate limiting per tier (Free vs Pro)</li>
+                <li>✓ 2,207 Invoices ledger with automated auditing</li>
                 <li>✓ State time-travel: Replay any ticket execution</li>
               </ul>
             </div>

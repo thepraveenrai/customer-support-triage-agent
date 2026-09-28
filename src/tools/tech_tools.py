@@ -6,7 +6,7 @@ and search technical troubleshooting documentation.
 
 from typing import Any, Dict, List, Optional
 from langchain_core.tools import tool
-from src.mock_data import KNOWLEDGE_BASE, MOCK_SYSTEM_LOGS, SYSTEM_STATUS_DB
+from src.crm_store import KNOWLEDGE_BASE, MOCK_SYSTEM_LOGS, SYSTEM_STATUS_DB
 
 
 @tool
